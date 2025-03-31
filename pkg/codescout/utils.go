@@ -3,6 +3,7 @@ package codescout
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -29,13 +30,12 @@ func nodeToCode(node any) string {
 }
 
 func parseFile(src string, fset *token.FileSet) *ast.File {
-	var node *ast.File
-	_, err := os.Stat(src)
-	if err == nil {
-		node, _ = parser.ParseFile(fset, src, nil, parser.ParseComments)
-	} else {
-		node, _ = parser.ParseFile(fset, "", src, parser.ParseComments)
-	}
+	node, _ := parser.ParseFile(fset, src, nil, parser.ParseComments)
+	return node
+}
+
+func parseSource(src string, fset *token.FileSet) *ast.File {
+	node, _ := parser.ParseFile(fset, "", src, parser.ParseComments)
 	return node
 }
 
@@ -45,4 +45,13 @@ func filePathExists(path string) error {
 		return err
 	}
 	return nil
+}
+
+func inspectorGetNode[T any](inspector Inspector[T], symbol string) (*T, error) {
+	if len(inspector.getNodes()) == 0 {
+		errMsg := fmt.Sprintf("no %s was found based on configuration", symbol)
+		err := errors.New(errMsg)
+		return nil, err
+	}
+	return &(inspector.getNodes())[0], nil
 }

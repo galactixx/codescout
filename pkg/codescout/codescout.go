@@ -1,7 +1,6 @@
 package codescout
 
 import (
-	"errors"
 	"go/token"
 )
 
@@ -10,35 +9,30 @@ type Parameter struct {
 	Type string
 }
 
-type FunctionConfig struct {
+type FuncConfig struct {
 	Name        string
 	Types       []Parameter
 	ReturnTypes []string
 }
 
 type StructConfig struct {
-	Name string
+	Name    string
+	Types   []Parameter
+	Methods []FuncConfig
 }
 
-func ScoutFunction(path string, config FunctionConfig) (*FuncNode, error) {
+func ScoutFunction(path string, config FuncConfig) (*FuncNode, error) {
 	if fileExistsErr := filePathExists(path); fileExistsErr != nil {
 		return nil, fileExistsErr
 	}
 
-	fset := token.NewFileSet()
 	inspector := funcInspector{
 		Nodes:  []FuncNode{},
 		Config: config,
-		Base:   baseInspector{Path: path, Fset: fset},
+		Base:   baseInspector{Path: path, Fset: token.NewFileSet()},
 	}
-	node := parseFile(path, fset)
-	inspector.inspect(node)
-
-	if len(inspector.Nodes) == 0 {
-		err := errors.New("no function was found based on configuration")
-		return nil, err
-	}
-	return &(inspector.Nodes)[0], nil
+	inspector.inspect()
+	return inspectorGetNode(&inspector, "function")
 }
 
 func ScoutStruct(path string, config StructConfig) (*StructNode, error) {
@@ -46,18 +40,11 @@ func ScoutStruct(path string, config StructConfig) (*StructNode, error) {
 		return nil, fileExistsErr
 	}
 
-	fset := token.NewFileSet()
 	inspector := structInspector{
 		Nodes:  []StructNode{},
 		Config: config,
-		Base:   baseInspector{Path: path, Fset: fset},
+		Base:   baseInspector{Path: path, Fset: token.NewFileSet()},
 	}
-	node := parseFile(path, fset)
-	inspector.inspect(node)
-
-	if len(inspector.Nodes) == 0 {
-		err := errors.New("no function was found based on configuration")
-		return nil, err
-	}
-	return &(inspector.Nodes)[0], nil
+	inspector.inspect()
+	return inspectorGetNode(&inspector, "struct")
 }

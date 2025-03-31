@@ -5,11 +5,12 @@ import (
 	"go/token"
 )
 
-type Inspector interface {
-	isNodeMatch(name string) bool
-	appendNode(node BaseNode)
+type Inspector[T any] interface {
+	isNodeMatch(name T) bool
+	appendNode(node T)
 	inspector(n ast.Node) bool
-	inspect(n ast.Node)
+	inspect()
+	getNodes() []T
 }
 
 type baseInspector struct {
@@ -18,7 +19,7 @@ type baseInspector struct {
 	Count int
 }
 
-func (i *baseInspector) inspect(node ast.Node, inspector func(n ast.Node) bool) {
+func (i baseInspector) inspect(node ast.Node, inspector func(n ast.Node) bool) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		if i.Count > 0 {
 			return false
@@ -27,7 +28,7 @@ func (i *baseInspector) inspect(node ast.Node, inspector func(n ast.Node) bool) 
 	})
 }
 
-func (i *baseInspector) newNode(name string, node ast.Node, comment string) BaseNode {
+func (i baseInspector) newNode(name string, node ast.Node, comment string) BaseNode {
 	line, characters := i.getPos(node)
 	return BaseNode{
 		Name:       name,
@@ -43,7 +44,7 @@ func (i *baseInspector) increment() {
 	i.Count += 1
 }
 
-func (i *baseInspector) getPos(node ast.Node) (int, int) {
+func (i baseInspector) getPos(node ast.Node) (int, int) {
 	pos := i.Fset.Position(node.Pos())
 	line := pos.Line
 	characters := pos.Column
@@ -56,7 +57,7 @@ type structInspector struct {
 	Base   baseInspector
 }
 
-func (i *structInspector) isNodeMatch(node StructNode) bool {
+func (i structInspector) isNodeMatch(node StructNode) bool {
 	return true
 }
 
@@ -65,11 +66,16 @@ func (i *structInspector) appendNode(node StructNode) {
 	i.Base.increment()
 }
 
-func (i *structInspector) inspect(node ast.Node) {
+func (i *structInspector) inspect() {
+	node := parseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, i.inspector)
 }
 
-func (i *structInspector) newStruct(node ast.Node, spec *ast.TypeSpec) StructNode {
+func (i *structInspector) getNodes() []StructNode {
+	return i.Nodes
+}
+
+func (i structInspector) newStruct(node ast.Node, spec *ast.TypeSpec) StructNode {
 	var comment string = ""
 	if spec.Doc != nil {
 		comment = spec.Doc.Text()
@@ -100,27 +106,26 @@ func (i *structInspector) inspector(node ast.Node) bool {
 
 type funcInspector struct {
 	Nodes  []FuncNode
-	Config FunctionConfig
+	Config FuncConfig
 	Base   baseInspector
 }
 
-func (i *funcInspector) isNodeMatch(node FuncNode) bool {
+func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	if i.Config.Name != "" && i.Config.Name != node.Node.Name {
 		return false
 	}
 
-	returnTypesValidation := typeValidation{TypeMap: node.returnTypesMap()}
+	returnValidation := typeValidation{TypeMap: node.returnTypesMap()}
 	for _, returnType := range i.Config.ReturnTypes {
-		if returnTypesValidation.typeExclusiveNotInParams(returnType) {
-			return false
-		}
-		if returnTypesValidation.hasExhaustedTypes(returnType) {
+		if returnValidation.typeExclNotIn(returnType) ||
+			returnValidation.hasExhausted(returnType) {
 			return false
 		}
 	}
 
 	typesValidation := typeValidation{
-		TypeMap: node.parameterTypeMap(), ParameterMap: node.ParametersMap(),
+		TypeMap:      node.parameterTypeMap(),
+		ParameterMap: node.ParametersMap(),
 	}
 	var parameterType string
 
@@ -128,15 +133,9 @@ func (i *funcInspector) isNodeMatch(node FuncNode) bool {
 		paramType := funcParameter.Type
 		name := funcParameter.Name
 		typesValidation.setNameInParams(name)
-		if !typesValidation.NameInParams {
-			return false
-		}
-
-		if typesValidation.typeNotInParams(name, paramType) {
-			return false
-		}
-
-		if typesValidation.typeExclusiveNotInParams(paramType) {
+		if !typesValidation.NameInParams ||
+			typesValidation.typeNotIn(name, paramType) ||
+			typesValidation.typeExclNotIn(paramType) {
 			return false
 		}
 
@@ -145,7 +144,7 @@ func (i *funcInspector) isNodeMatch(node FuncNode) bool {
 		} else {
 			parameterType = paramType
 		}
-		if typesValidation.hasExhaustedTypes(parameterType) {
+		if typesValidation.hasExhausted(parameterType) {
 			return false
 		}
 	}
@@ -157,11 +156,16 @@ func (i *funcInspector) appendNode(node FuncNode) {
 	i.Base.increment()
 }
 
-func (i *funcInspector) inspect(node ast.Node) {
+func (i *funcInspector) inspect() {
+	node := parseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, i.inspector)
 }
 
-func (i *funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
+func (i funcInspector) getNodes() []FuncNode {
+	return i.Nodes
+}
+
+func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
 	baseNode := i.Base.newNode(name, node, comment)
 	funcNode := node.(*ast.FuncDecl)
 	return FuncNode{Node: baseNode, node: funcNode}
@@ -172,6 +176,7 @@ func (i *funcInspector) inspector(n ast.Node) bool {
 	if !ok {
 		return true
 	}
+
 	var comment string = ""
 	if funcDecl.Doc != nil {
 		comment = funcDecl.Doc.Text()
