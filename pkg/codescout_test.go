@@ -1,7 +1,6 @@
 package codescout
 
 import (
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -22,7 +21,6 @@ func compareStructValues(t *testing.T, actual any, expected any) {
 
 	for i := 0; i < expectedType.NumField(); i++ {
 		name := expectedType.Field(i).Name
-		fmt.Println(name)
 
 		eValue := expectedV.FieldByName(name).Interface()
 		aValue := actualV.FieldByName(name).Interface()
@@ -55,7 +53,7 @@ func TestScoutFunction(t *testing.T) {
 				Line:       20,
 				Characters: 1,
 				Exported:   true,
-				Comment:    "Above above function\nAbove function\nFunction\n",
+				Comment:    "Above above function\nAbove function\nFunction",
 			},
 		},
 	}

@@ -40,10 +40,16 @@ type FuncNode struct {
 
 func (f FuncNode) ReturnTypes() []string {
 	returnTypes := make([]string, 0, 5)
-	for _, returnType := range f.node.Type.Results.List {
-		returnTypes = append(returnTypes, nodeToCode(returnType.Type))
+	if f.node.Type.Results != nil {
+		for _, returnType := range f.node.Type.Results.List {
+			returnTypes = append(returnTypes, nodeToCode(returnType.Type))
+		}
 	}
 	return returnTypes
+}
+
+func (f FuncNode) ReturnType() string {
+	return nodeToCode(f.node.Type.Results)
 }
 
 func (f FuncNode) returnTypesMap() map[string]int {
@@ -53,7 +59,7 @@ func (f FuncNode) returnTypesMap() map[string]int {
 func (f FuncNode) Comments() string {
 	var buf bytes.Buffer
 	for _, comment := range f.node.Doc.List {
-		buf.WriteString(comment.Text + "\n")
+		buf.WriteString(comment.Text)
 	}
 	return buf.String()
 }
@@ -72,6 +78,22 @@ func (f FuncNode) Code() string {
 
 func (f FuncNode) PrintNode() {
 	fmt.Println(f.Code())
+}
+
+func (f FuncNode) PrintBody() {
+	fmt.Println(f.Body())
+}
+
+func (f FuncNode) PrintSignature() {
+	fmt.Println(f.Signature())
+}
+
+func (f FuncNode) PrintReturnType() {
+	fmt.Println(f.ReturnType())
+}
+
+func (f FuncNode) PrintComments() {
+	fmt.Println(f.Comments())
 }
 
 func (f FuncNode) Body() string {

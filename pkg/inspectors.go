@@ -3,6 +3,7 @@ package codescout
 import (
 	"go/ast"
 	"go/token"
+	"strings"
 )
 
 type Inspector[T any] interface {
@@ -36,7 +37,7 @@ func (i baseInspector) newNode(name string, node ast.Node, comment string) BaseN
 		Line:       line,
 		Characters: characters,
 		Exported:   token.IsExported(name),
-		Comment:    comment,
+		Comment:    strings.TrimSpace(comment),
 	}
 }
 
@@ -117,7 +118,8 @@ func (i funcInspector) isNodeMatch(node FuncNode) bool {
 
 	returnValidation := typeValidation{TypeMap: node.returnTypesMap()}
 	for _, returnType := range i.Config.ReturnTypes {
-		if returnValidation.typeExclNotIn(returnType) ||
+		returnValidation.setParamType(returnType)
+		if !returnValidation.typeExclExists() ||
 			returnValidation.hasExhausted(returnType) {
 			return false
 		}
@@ -129,20 +131,19 @@ func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	}
 	var parameterType string
 
-	for _, funcParameter := range i.Config.Types {
-		paramType := funcParameter.Type
-		name := funcParameter.Name
-		typesValidation.setNameInParams(name)
-		if !typesValidation.NameInParams ||
-			typesValidation.typeNotIn(name, paramType) ||
-			typesValidation.typeExclNotIn(paramType) {
+	for _, parameter := range i.Config.Types {
+		typesValidation.setParamInfo(parameter.Name, parameter.Type)
+		typesValidation.setNameInParams(parameter.Name)
+
+		if !typesValidation.CurNameInParams && parameter.Name != "" ||
+			!typesValidation.typeExists() {
 			return false
 		}
 
-		if name != "" {
-			parameterType = typesValidation.ParameterMap[name]
+		if typesValidation.CurNameInParams {
+			parameterType = typesValidation.getParamType(parameter.Name)
 		} else {
-			parameterType = paramType
+			parameterType = parameter.Type
 		}
 		if typesValidation.hasExhausted(parameterType) {
 			return false
