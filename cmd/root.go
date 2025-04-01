@@ -12,7 +12,7 @@ var rootCmd = &cobra.Command{
 	Short: "Quickly locate classes and functions in any codebase",
 	Long: `CodeScout is a lightweight CLI tool and Go module that helps developers 
 quickly locate classes, functions, and other elements in any codebase. 
-It makes code navigation and structure analysis fast and efficient.`,
+It makes code navigation and structure analysis fast and efficient`,
 }
 
 func Execute() {

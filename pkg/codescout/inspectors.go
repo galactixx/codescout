@@ -45,6 +45,12 @@ func (i *baseInspector) increment() {
 	i.Count += 1
 }
 
+func (i baseInspector) getCallableNodes(name string, node ast.Node, comment string) (BaseNode, *ast.FuncDecl) {
+	baseNode := i.newNode(name, node, comment)
+	funcNode := node.(*ast.FuncDecl)
+	return baseNode, funcNode
+}
+
 func (i baseInspector) getPos(node ast.Node) (int, int) {
 	pos := i.Fset.Position(node.Pos())
 	line := pos.Line
@@ -105,6 +111,86 @@ func (i *structInspector) inspector(node ast.Node) bool {
 	return true
 }
 
+type methodInspector struct {
+	Nodes  []MethodNode
+	Config MethodConfig
+	Base   baseInspector
+}
+
+func (i methodInspector) isNodeMatch(node MethodNode) bool {
+	if i.Config.Name != "" && i.Config.Name != node.Node.Name {
+		return false
+	}
+
+	if !returnTypeValidation(i.Config.ReturnTypes, node.CallableOps) ||
+		!parameterTypeValidation(i.Config.Types, node.CallableOps) {
+		return false
+	}
+	return true
+}
+
+func (i *methodInspector) appendNode(node MethodNode) {
+	i.Nodes = append(i.Nodes, node)
+	i.Base.increment()
+}
+
+func (i *methodInspector) inspect() {
+	node := parseFile(i.Base.Path, i.Base.Fset)
+	i.Base.inspect(node, i.inspector)
+}
+
+func (i methodInspector) getNodes() []MethodNode {
+	return i.Nodes
+}
+
+func (i methodInspector) newMethod(name string, node ast.Node, comment string) MethodNode {
+	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
+	return MethodNode{Node: baseNode, CallableOps: CallableNodeOps{node: funcNode}}
+}
+
+func (i *methodInspector) inspector(n ast.Node) bool {
+	funcDecl, ok := n.(*ast.FuncDecl)
+	if !ok || funcDecl.Recv == nil {
+		return true
+	}
+
+	var comment string = ""
+	if funcDecl.Doc != nil {
+		comment = funcDecl.Doc.Text()
+	}
+	name := funcDecl.Name.Name
+	methodNode := i.newMethod(name, funcDecl, comment)
+	receiverName := methodNode.ReceiverName()
+
+	if i.isNodeMatch(methodNode) {
+		var parentStack []ast.Node
+		ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+			if n == nil {
+				parentStack = parentStack[:len(parentStack)-1]
+				return true
+			}
+
+			sel, ok := n.(*ast.SelectorExpr)
+			if ok {
+				if ident, ok := sel.X.(*ast.Ident); ok && ident.Name == receiverName {
+					curParent := parentStack[len(parentStack)-1]
+					attrName := sel.Sel.Name
+					if call, isCall := curParent.(*ast.CallExpr); isCall && call.Fun == sel {
+						methodNode.MethodsCalled = append(methodNode.MethodsCalled, attrName)
+					} else {
+						methodNode.FieldsAccessed = append(methodNode.FieldsAccessed, attrName)
+					}
+				}
+			}
+			parentStack = append(parentStack, n)
+			return true
+		})
+		i.appendNode(methodNode)
+	}
+
+	return true
+}
+
 type funcInspector struct {
 	Nodes  []FuncNode
 	Config FuncConfig
@@ -116,38 +202,9 @@ func (i funcInspector) isNodeMatch(node FuncNode) bool {
 		return false
 	}
 
-	returnValidation := typeValidation{TypeMap: node.returnTypesMap()}
-	for _, returnType := range i.Config.ReturnTypes {
-		returnValidation.setParamType(returnType)
-		if !returnValidation.typeExclExists() ||
-			returnValidation.hasExhausted(returnType) {
-			return false
-		}
-	}
-
-	typesValidation := typeValidation{
-		TypeMap:      node.parameterTypeMap(),
-		ParameterMap: node.ParametersMap(),
-	}
-	var parameterType string
-
-	for _, parameter := range i.Config.Types {
-		typesValidation.setParamInfo(parameter.Name, parameter.Type)
-		typesValidation.setNameInParams(parameter.Name)
-
-		if !typesValidation.CurNameInParams && parameter.Name != "" ||
-			!typesValidation.typeExists() {
-			return false
-		}
-
-		if typesValidation.CurNameInParams {
-			parameterType = typesValidation.getParamType(parameter.Name)
-		} else {
-			parameterType = parameter.Type
-		}
-		if typesValidation.hasExhausted(parameterType) {
-			return false
-		}
+	if !returnTypeValidation(i.Config.ReturnTypes, node.CallableOps) ||
+		!parameterTypeValidation(i.Config.Types, node.CallableOps) {
+		return false
 	}
 	return true
 }
@@ -167,14 +224,17 @@ func (i funcInspector) getNodes() []FuncNode {
 }
 
 func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
-	baseNode := i.Base.newNode(name, node, comment)
-	funcNode := node.(*ast.FuncDecl)
-	return FuncNode{Node: baseNode, node: funcNode}
+	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
+	return FuncNode{Node: baseNode, CallableOps: CallableNodeOps{node: funcNode}}
 }
 
 func (i *funcInspector) inspector(n ast.Node) bool {
 	funcDecl, ok := n.(*ast.FuncDecl)
 	if !ok {
+		return true
+	}
+
+	if funcDecl.Recv != nil {
 		return true
 	}
 

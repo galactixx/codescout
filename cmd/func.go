@@ -2,24 +2,23 @@ package cmd
 
 import (
 	"errors"
-	"strings"
 
-	codescout "github.com/galactixx/codescout/pkg"
+	"github.com/galactixx/codescout/internal/utils"
+	codescout "github.com/galactixx/codescout/pkg/codescout"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var (
-	funcName       string
-	returnTypes    []string
-	parameterTypes []string
-	outputType     string
+	funcName           string
+	funcReturnTypes    []string
+	funcParameterTypes []string
+	funcOutputType     string
 )
 
 var funcCmd = &cobra.Command{
 	Use:   "func",
 	Short: "Find a single function in a file",
-	Long:  "Locate and display a specific function definition by name within a given source file.",
+	Long:  "Locate and display a specific function definition within a given source file",
 	Args:  cobra.ExactArgs(1),
 	RunE:  funcCmdRun,
 }
@@ -27,11 +26,11 @@ var funcCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(funcCmd)
 
-	funcCmd.Flags().StringVarP(&funcName, "name", "n", "", "Function name to use")
-	funcCmd.Flags().StringSliceVarP(&parameterTypes, "params", "p", make([]string, 0), "Parameter names and types of function")
-	funcCmd.Flags().StringSliceVarP(&returnTypes, "return", "r", make([]string, 0), "Return types of function")
+	funcCmd.Flags().StringVarP(&funcName, "name", "n", "", "The function name")
+	funcCmd.Flags().StringSliceVarP(&funcParameterTypes, "params", "p", make([]string, 0), "Parameter names and types of function")
+	funcCmd.Flags().StringSliceVarP(&funcReturnTypes, "return", "r", make([]string, 0), "Return types of function")
 	funcCmd.Flags().StringVarP(
-		&outputType,
+		&funcOutputType,
 		"output",
 		"o",
 		"declaration",
@@ -39,31 +38,23 @@ func init() {
 	)
 }
 
-func countFlagsSet(cmd *cobra.Command) int {
-	count := 0
-	cmd.Flags().Visit(func(f *pflag.Flag) {
-		count++
-	})
-	return count
-}
-
 func displayOutput(function *codescout.FuncNode) {
-	switch outputType {
-	case "declaration":
-		function.PrintNode()
+	switch funcOutputType {
 	case "return":
-		function.PrintReturnType()
+		function.CallableOps.PrintReturnType()
 	case "signature":
-		function.PrintSignature()
+		function.CallableOps.PrintSignature()
+	case "body":
+		function.CallableOps.PrintBody()
 	case "comment":
 		function.PrintComments()
 	default:
-		function.PrintBody()
+		function.PrintNode()
 	}
 }
 
 func funcCmdRun(cmd *cobra.Command, args []string) error {
-	numFlagsSet := countFlagsSet(cmd)
+	numFlagsSet := utils.CountFlagsSet(cmd)
 	filePath := args[0]
 
 	if numFlagsSet == 0 {
@@ -74,11 +65,11 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		return errors.New("if name flag is specified it must not be empty")
 	}
 
-	if cmd.Flags().Changed("paramtypes") && len(parameterTypes) == 0 {
+	if cmd.Flags().Changed("paramtypes") && len(funcParameterTypes) == 0 {
 		return errors.New("if paramtypes flag is specified it must not be empty")
 	}
 
-	if cmd.Flags().Changed("return") && len(returnTypes) == 0 {
+	if cmd.Flags().Changed("return") && len(funcReturnTypes) == 0 {
 		return errors.New("if return flag is specified it must not be empty")
 	}
 
@@ -89,28 +80,21 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		"comment":     nil,
 		"return":      nil,
 	}
-	_, outputValid := outputAllowed[outputType]
+	_, outputValid := outputAllowed[funcOutputType]
 	if cmd.Flags().Changed("output") && !outputValid {
 		return errors.New("output flag must be one of: declaration, body, signature, comment, return")
 	}
 
 	functionTypes := make([]codescout.Parameter, 0, 5)
-	for _, parameter := range parameterTypes {
-		if strings.Count(parameter, ":") != 1 {
-			return errors.New("")
-		}
-
-		paramDestruct := strings.SplitN(parameter, ":", 2)
-		paramName := strings.TrimSpace(paramDestruct[0])
-		paramType := strings.TrimSpace(paramDestruct[1])
-		param := codescout.Parameter{Name: paramName, Type: paramType}
-		functionTypes = append(functionTypes, param)
+	err := utils.ArgsToParams(funcParameterTypes, &functionTypes)
+	if err != nil {
+		return err
 	}
 
 	functionConfig := codescout.FuncConfig{
 		Name:        funcName,
 		Types:       functionTypes,
-		ReturnTypes: returnTypes,
+		ReturnTypes: funcReturnTypes,
 	}
 	function, err := codescout.ScoutFunction(filePath, functionConfig)
 	if err != nil {

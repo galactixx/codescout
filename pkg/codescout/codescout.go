@@ -15,6 +15,16 @@ type FuncConfig struct {
 	ReturnTypes []string
 }
 
+type MethodConfig struct {
+	Name           string
+	Types          []Parameter
+	ReturnTypes    []string
+	Receiver       string
+	IsPointer      bool
+	FieldsAccessed []string
+	MethodsCalled  []string
+}
+
 type StructConfig struct {
 	Name    string
 	Types   []Parameter
@@ -47,4 +57,18 @@ func ScoutStruct(path string, config StructConfig) (*StructNode, error) {
 	}
 	inspector.inspect()
 	return inspectorGetNode(&inspector, "struct")
+}
+
+func ScoutMehod(path string, config MethodConfig) (*MethodNode, error) {
+	if fileExistsErr := filePathExists(path); fileExistsErr != nil {
+		return nil, fileExistsErr
+	}
+
+	inspector := methodInspector{
+		Nodes:  []MethodNode{},
+		Config: config,
+		Base:   baseInspector{Path: path, Fset: token.NewFileSet()},
+	}
+	inspector.inspect()
+	return inspectorGetNode(&inspector, "method")
 }
