@@ -14,6 +14,8 @@ var (
 	methodReturnTypes    []string
 	methodParameterTypes []string
 	methodOutputType     string
+	methodReceiver       string
+	hasPointerReceiver   string
 )
 
 var methodEnumOptions = utils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
@@ -41,6 +43,8 @@ func init() {
 	methodCmd.Flags().StringVarP(&methodName, "name", "n", "", "The method name")
 	methodCmd.Flags().StringSliceVarP(&methodParameterTypes, "params", "p", make([]string, 0), "Parameter names and types of method")
 	methodCmd.Flags().StringSliceVarP(&methodReturnTypes, "return", "r", make([]string, 0), "Return types of method")
+	methodCmd.Flags().StringVarP(&methodReceiver, "receiver", "v", "", "Receiver type of method")
+	methodCmd.Flags().StringVarP(&hasPointerReceiver, "pointer", "t", "", "Whether method has a pointer receiver (true/false)")
 	methodCmd.Flags().StringVarP(
 		&methodOutputType,
 		"output",
@@ -70,6 +74,15 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 		return errors.New("if return flag is specified it must not be empty")
 	}
 
+	if cmd.Flags().Changed("receiver") && methodReceiver == "" {
+		return errors.New("if receiver flag is specified it must not be empty")
+	}
+
+	_, hasPointer := map[string]*int{"true": nil, "false": nil}[hasPointerReceiver]
+	if cmd.Flags().Changed("pointer") && !hasPointer {
+		return errors.New("if pointer flag is specified it must be: true or false")
+	}
+
 	methodTypes := make([]codescout.Parameter, 0, 5)
 	err := utils.ArgsToParams(methodParameterTypes, &methodTypes)
 	if err != nil {
@@ -82,9 +95,11 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	methodConfig := codescout.MethodConfig{
-		Name:        methodName,
-		Types:       methodTypes,
-		ReturnTypes: funcReturnTypes,
+		Name:         methodName,
+		Types:        methodTypes,
+		ReturnTypes:  methodReturnTypes,
+		Receiver:     methodReceiver,
+		IsPointerRec: hasPointerReceiver,
 	}
 	method, err := codescout.ScoutMehod(filePath, methodConfig)
 	if err != nil {

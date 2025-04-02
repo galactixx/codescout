@@ -20,7 +20,7 @@ type MethodConfig struct {
 	Types          []Parameter
 	ReturnTypes    []string
 	Receiver       string
-	IsPointer      bool
+	IsPointerRec   string
 	FieldsAccessed []string
 	MethodsCalled  []string
 }

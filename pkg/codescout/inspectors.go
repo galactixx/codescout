@@ -3,6 +3,7 @@ package codescout
 import (
 	"go/ast"
 	"go/token"
+	"strconv"
 	"strings"
 )
 
@@ -118,15 +119,14 @@ type methodInspector struct {
 }
 
 func (i methodInspector) isNodeMatch(node MethodNode) bool {
-	if i.Config.Name != "" && i.Config.Name != node.Node.Name {
-		return false
-	}
+	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
+	validReturns := returnTypeValidation(i.Config.ReturnTypes, node.CallableOps)
+	validParams := parameterTypeValidation(i.Config.Types, node.CallableOps)
+	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
-	if !returnTypeValidation(i.Config.ReturnTypes, node.CallableOps) ||
-		!parameterTypeValidation(i.Config.Types, node.CallableOps) {
-		return false
-	}
-	return true
+	hasPointerRec, err := strconv.ParseBool(i.Config.IsPointerRec)
+	validPtr := !(err == nil && hasPointerRec != node.HasPointerReceiver())
+	return nameEquals && validReturns && validParams && validReceiver && validPtr
 }
 
 func (i *methodInspector) appendNode(node MethodNode) {
@@ -202,15 +202,10 @@ type funcInspector struct {
 }
 
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
-	if i.Config.Name != "" && i.Config.Name != node.Node.Name {
-		return false
-	}
-
-	if !returnTypeValidation(i.Config.ReturnTypes, node.CallableOps) ||
-		!parameterTypeValidation(i.Config.Types, node.CallableOps) {
-		return false
-	}
-	return true
+	nameNotEqual := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
+	invalidReturns := returnTypeValidation(i.Config.ReturnTypes, node.CallableOps)
+	invalidParams := parameterTypeValidation(i.Config.Types, node.CallableOps)
+	return nameNotEqual && invalidReturns && invalidParams
 }
 
 func (i *funcInspector) appendNode(node FuncNode) {

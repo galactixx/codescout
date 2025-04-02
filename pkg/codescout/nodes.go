@@ -54,16 +54,17 @@ func (f *MethodNode) addMethodCall(method string) {
 	}
 }
 
+func (f MethodNode) HasPointerReceiver() bool {
+	_, isPointer := f.CallableOps.node.Recv.List[0].Type.(*ast.StarExpr)
+	return isPointer
+}
+
 func (f MethodNode) FieldsAccessed() []string {
 	return fromEmptyMapKeysToSlice(f.fieldsAccessed)
 }
 
 func (f MethodNode) MethodsCalled() []string {
 	return fromEmptyMapKeysToSlice(f.methodsCalled)
-}
-
-func (f MethodNode) HasPointerReceiver() bool {
-	return true
 }
 
 func (f MethodNode) PrintNode() {
@@ -182,7 +183,7 @@ func (f CallableNodeOps) Code() string {
 	if f.node.Doc == nil {
 		return codeString
 	} else {
-		return f.Comments() + codeString
+		return f.Comments() + "\n" + codeString
 	}
 }
 

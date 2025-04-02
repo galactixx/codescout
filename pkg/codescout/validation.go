@@ -50,3 +50,43 @@ func (v typeValidation) typeExists() bool {
 	}
 	return v.CurParamType == ""
 }
+
+func returnTypeValidation(returns []string, ops CallableNodeOps) bool {
+	returnValidation := typeValidation{TypeMap: ops.returnTypesMap()}
+	for _, returnType := range returns {
+		returnValidation.setParamType(returnType)
+		if !returnValidation.typeExclExists() ||
+			returnValidation.hasExhausted(returnType) {
+			return false
+		}
+	}
+	return true
+}
+
+func parameterTypeValidation(params []Parameter, ops CallableNodeOps) bool {
+	typesValidation := typeValidation{
+		TypeMap:      ops.parameterTypeMap(),
+		ParameterMap: ops.ParametersMap(),
+	}
+	var parameterType string
+
+	for _, parameter := range params {
+		typesValidation.setParamInfo(parameter.Name, parameter.Type)
+		typesValidation.setNameInParams(parameter.Name)
+
+		if !typesValidation.CurNameInParams && parameter.Name != "" ||
+			!typesValidation.typeExists() {
+			return false
+		}
+
+		if typesValidation.CurNameInParams {
+			parameterType = typesValidation.getParamType(parameter.Name)
+		} else {
+			parameterType = parameter.Type
+		}
+		if typesValidation.hasExhausted(parameterType) {
+			return false
+		}
+	}
+	return true
+}
