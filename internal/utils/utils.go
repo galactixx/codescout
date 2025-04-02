@@ -2,12 +2,37 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/galactixx/codescout/pkg/codescout"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+type EnumOptions[T any] struct {
+	Options map[string]func(T) any
+}
+
+func (o EnumOptions[T]) EnumValidation(cmd *cobra.Command, flag string, outputType string) error {
+	_, outputValid := o.Options[outputType]
+	if cmd.Flags().Changed("output") && !outputValid {
+		return fmt.Errorf("%v flag must be one of: %v", flag, o.ToOptionString())
+	}
+	return nil
+}
+
+func (o EnumOptions[T]) ToOptionString() string {
+	optionsSlice := make([]string, 0, 5)
+	for option := range o.Options {
+		optionsSlice = append(optionsSlice, option)
+	}
+	return strings.Join(optionsSlice, ", ")
+}
+
+func (o EnumOptions[T]) GetOutputCallable(option string) func(T) any {
+	return o.Options[option]
+}
 
 func CountFlagsSet(cmd *cobra.Command) int {
 	count := 0

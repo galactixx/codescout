@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/galactixx/codescout/internal/utils"
 	codescout "github.com/galactixx/codescout/pkg/codescout"
@@ -12,7 +13,19 @@ var (
 	methodName           string
 	methodReturnTypes    []string
 	methodParameterTypes []string
+	methodOutputType     string
 )
+
+var methodEnumOptions = utils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
+	"declaration":      func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
+	"body":             func(node *codescout.MethodNode) any { return node.CallableOps.Body() },
+	"signature":        func(node *codescout.MethodNode) any { return node.CallableOps.Signature() },
+	"comment":          func(node *codescout.MethodNode) any { return node.CallableOps.Comments() },
+	"return":           func(node *codescout.MethodNode) any { return node.CallableOps.ReturnType() },
+	"receiver":         func(node *codescout.MethodNode) any { return node.ReceiverType() },
+	"receiver-fields":  func(node *codescout.MethodNode) any { return node.FieldsAccessed() },
+	"recevier-methods": func(node *codescout.MethodNode) any { return node.MethodsCalled() },
+}}
 
 var methodCmd = &cobra.Command{
 	Use:   "method",
@@ -28,6 +41,13 @@ func init() {
 	methodCmd.Flags().StringVarP(&methodName, "name", "n", "", "The method name")
 	methodCmd.Flags().StringSliceVarP(&methodParameterTypes, "params", "p", make([]string, 0), "Parameter names and types of method")
 	methodCmd.Flags().StringSliceVarP(&methodReturnTypes, "return", "r", make([]string, 0), "Return types of method")
+	methodCmd.Flags().StringVarP(
+		&methodOutputType,
+		"output",
+		"o",
+		"declaration",
+		fmt.Sprintf("Part of method to output, must be one of: %v", methodEnumOptions.ToOptionString()),
+	)
 }
 
 func methodCmdRun(cmd *cobra.Command, args []string) error {
@@ -56,6 +76,11 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	outputErr := methodEnumOptions.EnumValidation(cmd, "output", methodOutputType)
+	if outputErr != nil {
+		return outputErr
+	}
+
 	methodConfig := codescout.MethodConfig{
 		Name:        methodName,
 		Types:       methodTypes,
@@ -65,6 +90,6 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	method.PrintNode()
+	fmt.Println(methodEnumOptions.GetOutputCallable(methodOutputType)(method))
 	return nil
 }

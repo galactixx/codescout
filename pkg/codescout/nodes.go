@@ -38,8 +38,28 @@ type MethodNode struct {
 	Node        BaseNode
 	CallableOps CallableNodeOps
 
-	FieldsAccessed []string
-	MethodsCalled  []string
+	fieldsAccessed map[string]*int
+	methodsCalled  map[string]*int
+}
+
+func (f *MethodNode) addMethodField(field string) {
+	if _, seenField := f.fieldsAccessed[field]; !seenField {
+		f.fieldsAccessed[field] = nil
+	}
+}
+
+func (f *MethodNode) addMethodCall(method string) {
+	if _, seenMethod := f.methodsCalled[method]; !seenMethod {
+		f.methodsCalled[method] = nil
+	}
+}
+
+func (f MethodNode) FieldsAccessed() []string {
+	return fromEmptyMapKeysToSlice(f.fieldsAccessed)
+}
+
+func (f MethodNode) MethodsCalled() []string {
+	return fromEmptyMapKeysToSlice(f.methodsCalled)
 }
 
 func (f MethodNode) HasPointerReceiver() bool {

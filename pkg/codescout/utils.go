@@ -11,6 +11,14 @@ import (
 	"os"
 )
 
+func fromEmptyMapKeysToSlice(someMap map[string]*int) []string {
+	fieldsAccessed := make([]string, 0, 10)
+	for key := range someMap {
+		fieldsAccessed = append(fieldsAccessed, key)
+	}
+	return fieldsAccessed
+}
+
 func defaultTypeMap(nodeTypes []string) map[string]int {
 	nodeTypeMapping := make(map[string]int)
 	for _, nodeType := range nodeTypes {

@@ -145,7 +145,12 @@ func (i methodInspector) getNodes() []MethodNode {
 
 func (i methodInspector) newMethod(name string, node ast.Node, comment string) MethodNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
-	return MethodNode{Node: baseNode, CallableOps: CallableNodeOps{node: funcNode}}
+	return MethodNode{
+		Node:           baseNode,
+		CallableOps:    CallableNodeOps{node: funcNode},
+		fieldsAccessed: make(map[string]*int),
+		methodsCalled:  make(map[string]*int),
+	}
 }
 
 func (i *methodInspector) inspector(n ast.Node) bool {
@@ -174,11 +179,10 @@ func (i *methodInspector) inspector(n ast.Node) bool {
 			if ok {
 				if ident, ok := sel.X.(*ast.Ident); ok && ident.Name == receiverName {
 					curParent := parentStack[len(parentStack)-1]
-					attrName := sel.Sel.Name
 					if call, isCall := curParent.(*ast.CallExpr); isCall && call.Fun == sel {
-						methodNode.MethodsCalled = append(methodNode.MethodsCalled, attrName)
+						methodNode.addMethodCall(sel.Sel.Name)
 					} else {
-						methodNode.FieldsAccessed = append(methodNode.FieldsAccessed, attrName)
+						methodNode.addMethodField(sel.Sel.Name)
 					}
 				}
 			}

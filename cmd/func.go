@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/galactixx/codescout/internal/utils"
 	codescout "github.com/galactixx/codescout/pkg/codescout"
@@ -14,6 +15,14 @@ var (
 	funcParameterTypes []string
 	funcOutputType     string
 )
+
+var funcEnumOptions = utils.EnumOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) any{
+	"declaration": func(node *codescout.FuncNode) any { return node.CallableOps.Code() },
+	"body":        func(node *codescout.FuncNode) any { return node.CallableOps.Body() },
+	"signature":   func(node *codescout.FuncNode) any { return node.CallableOps.Signature() },
+	"comment":     func(node *codescout.FuncNode) any { return node.CallableOps.Comments() },
+	"return":      func(node *codescout.FuncNode) any { return node.CallableOps.ReturnType() },
+}}
 
 var funcCmd = &cobra.Command{
 	Use:   "func",
@@ -34,23 +43,8 @@ func init() {
 		"output",
 		"o",
 		"declaration",
-		"Part of function to output, must be one of: declaration, body, signature, comment, return",
+		fmt.Sprintf("Part of function to output, must be one of: %v", funcEnumOptions.ToOptionString()),
 	)
-}
-
-func displayOutput(function *codescout.FuncNode) {
-	switch funcOutputType {
-	case "return":
-		function.CallableOps.PrintReturnType()
-	case "signature":
-		function.CallableOps.PrintSignature()
-	case "body":
-		function.CallableOps.PrintBody()
-	case "comment":
-		function.PrintComments()
-	default:
-		function.PrintNode()
-	}
 }
 
 func funcCmdRun(cmd *cobra.Command, args []string) error {
@@ -73,16 +67,9 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		return errors.New("if return flag is specified it must not be empty")
 	}
 
-	outputAllowed := map[string]*int{
-		"declaration": nil,
-		"body":        nil,
-		"signature":   nil,
-		"comment":     nil,
-		"return":      nil,
-	}
-	_, outputValid := outputAllowed[funcOutputType]
-	if cmd.Flags().Changed("output") && !outputValid {
-		return errors.New("output flag must be one of: declaration, body, signature, comment, return")
+	outputErr := funcEnumOptions.EnumValidation(cmd, "output", funcOutputType)
+	if outputErr != nil {
+		return outputErr
 	}
 
 	functionTypes := make([]codescout.Parameter, 0, 5)
@@ -100,6 +87,6 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	displayOutput(function)
+	fmt.Println(funcEnumOptions.GetOutputCallable(funcOutputType)(function))
 	return nil
 }
