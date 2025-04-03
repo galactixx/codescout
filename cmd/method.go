@@ -4,21 +4,28 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/galactixx/codescout/internal/utils"
+	"github.com/galactixx/codescout/internal/cmdutils"
+	"github.com/galactixx/codescout/internal/flags"
 	codescout "github.com/galactixx/codescout/pkg/codescout"
 	"github.com/spf13/cobra"
 )
 
 var (
-	methodName           string
-	methodReturnTypes    []string
-	methodParameterTypes []string
-	methodOutputType     string
-	methodReceiver       string
-	hasPointerReceiver   string
+	methodName           = flags.CommandFlag[string]{Name: "name"}
+	methodReturnTypes    = flags.CommandFlag[[]string]{Name: "return"}
+	methodParameterTypes = flags.CommandFlag[[]string]{Name: "params"}
+	methodOutputType     = flags.CommandFlag[string]{Name: "output"}
+	methodReceiver       = flags.CommandFlag[string]{Name: "receiver"}
+	hasPointerReceiver   = flags.CommandFlag[string]{Name: "pointer"}
+	fieldsAccessed       = flags.CommandFlag[[]string]{Name: "fields"}
+	methodsCalled        = flags.CommandFlag[[]string]{Name: "methods"}
+	methodNoParams       = flags.CommandFlag[string]{Name: "no-params"}
+	methodNoReturn       = flags.CommandFlag[string]{Name: "no-return"}
+	noFieldsAccessed     = flags.CommandFlag[string]{Name: "no-fields"}
+	noMethodsCalled      = flags.CommandFlag[string]{Name: "no-methods"}
 )
 
-var methodEnumOptions = utils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
+var methodEnumOptions = cmdutils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
 	"declaration":      func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
 	"body":             func(node *codescout.MethodNode) any { return node.CallableOps.Body() },
 	"signature":        func(node *codescout.MethodNode) any { return node.CallableOps.Signature() },
@@ -28,6 +35,24 @@ var methodEnumOptions = utils.EnumOptions[*codescout.MethodNode]{Options: map[st
 	"receiver-fields":  func(node *codescout.MethodNode) any { return node.FieldsAccessed() },
 	"recevier-methods": func(node *codescout.MethodNode) any { return node.MethodsCalled() },
 }}
+
+var methodBatchValidator = flags.BatchValidator{
+	EmptyValidators: []flags.FlagValidator{
+		&methodName,
+		&methodReceiver,
+		&methodParameterTypes,
+		&methodReturnTypes,
+		&fieldsAccessed,
+		&methodsCalled,
+	},
+	StringBoolValidators: []*flags.CommandFlag[string]{
+		&methodNoParams,
+		&methodNoReturn,
+		&noFieldsAccessed,
+		&noMethodsCalled,
+		&hasPointerReceiver,
+	},
+}
 
 var methodCmd = &cobra.Command{
 	Use:   "method",
@@ -40,14 +65,20 @@ var methodCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(methodCmd)
 
-	methodCmd.Flags().StringVarP(&methodName, "name", "n", "", "The method name")
-	methodCmd.Flags().StringSliceVarP(&methodParameterTypes, "params", "p", make([]string, 0), "Parameter names and types of method")
-	methodCmd.Flags().StringSliceVarP(&methodReturnTypes, "return", "r", make([]string, 0), "Return types of method")
-	methodCmd.Flags().StringVarP(&methodReceiver, "receiver", "v", "", "Receiver type of method")
-	methodCmd.Flags().StringVarP(&hasPointerReceiver, "pointer", "t", "", "Whether method has a pointer receiver (true/false)")
-	methodCmd.Flags().StringVarP(
+	flags.StringVarP(methodCmd, &methodName, "n", "", "The method name")
+	flags.StringSliceVarP(methodCmd, &methodParameterTypes, "p", make([]string, 0), "Parameter names and types of method")
+	flags.StringSliceVarP(methodCmd, &methodReturnTypes, "r", make([]string, 0), "Return types of method")
+	flags.StringVarP(methodCmd, &methodReceiver, "v", "", "Receiver type of method")
+	flags.StringVarP(methodCmd, &hasPointerReceiver, "t", "", "Whether method has a pointer receiver (true/false)")
+	flags.StringSliceVarP(methodCmd, &fieldsAccessed, "f", make([]string, 0), "Struct fields accessed")
+	flags.StringSliceVarP(methodCmd, &methodsCalled, "m", make([]string, 0), "Struct methods called")
+	flags.StringVarP(methodCmd, &methodNoParams, "s", "", "If the method has no parameters (true/false)")
+	flags.StringVarP(methodCmd, &methodNoReturn, "u", "", "If the method has no return type (true/false)")
+	flags.StringVarP(methodCmd, &noFieldsAccessed, "d", "", "If the method does not access struct fields (true/false)")
+	flags.StringVarP(methodCmd, &noMethodsCalled, "e", "", "If the method does not call struct methods (true/false)")
+	flags.StringVarP(
+		methodCmd,
 		&methodOutputType,
-		"output",
 		"o",
 		"declaration",
 		fmt.Sprintf("Part of method to output, must be one of: %v", methodEnumOptions.ToOptionString()),
@@ -55,56 +86,45 @@ func init() {
 }
 
 func methodCmdRun(cmd *cobra.Command, args []string) error {
-	numFlagsSet := utils.CountFlagsSet(cmd)
 	filePath := args[0]
 
-	if numFlagsSet == 0 {
+	if cmdutils.CountFlagsSet(cmd) == 0 {
 		return errors.New("at least one flag must be set for the func command")
 	}
 
-	if cmd.Flags().Changed("name") && methodName == "" {
-		return errors.New("if name flag is specified it must not be empty")
-	}
-
-	if cmd.Flags().Changed("paramtypes") && len(methodParameterTypes) == 0 {
-		return errors.New("if paramtypes flag is specified it must not be empty")
-	}
-
-	if cmd.Flags().Changed("return") && len(methodReturnTypes) == 0 {
-		return errors.New("if return flag is specified it must not be empty")
-	}
-
-	if cmd.Flags().Changed("receiver") && methodReceiver == "" {
-		return errors.New("if receiver flag is specified it must not be empty")
-	}
-
-	_, hasPointer := map[string]*int{"true": nil, "false": nil}[hasPointerReceiver]
-	if cmd.Flags().Changed("pointer") && !hasPointer {
-		return errors.New("if pointer flag is specified it must be: true or false")
+	validationErr := methodBatchValidator.Validate(cmd)
+	if validationErr != nil {
+		return validationErr
 	}
 
 	methodTypes := make([]codescout.Parameter, 0, 5)
-	err := utils.ArgsToParams(methodParameterTypes, &methodTypes)
+	err := cmdutils.ArgsToParams(methodParameterTypes.Variable, &methodTypes)
 	if err != nil {
 		return err
 	}
 
-	outputErr := methodEnumOptions.EnumValidation(cmd, "output", methodOutputType)
+	outputErr := methodEnumOptions.EnumValidation(cmd, "output", methodOutputType.Variable)
 	if outputErr != nil {
 		return outputErr
 	}
 
 	methodConfig := codescout.MethodConfig{
-		Name:         methodName,
-		Types:        methodTypes,
-		ReturnTypes:  methodReturnTypes,
-		Receiver:     methodReceiver,
-		IsPointerRec: hasPointerReceiver,
+		Name:             methodName.Variable,
+		Types:            methodTypes,
+		ReturnTypes:      methodReturnTypes.Variable,
+		Receiver:         methodReceiver.Variable,
+		IsPointerRec:     flags.StringBoolToPointer(hasPointerReceiver.Variable),
+		FieldsAccessed:   fieldsAccessed.Variable,
+		MethodsCalled:    methodsCalled.Variable,
+		NoParams:         flags.StringBoolToPointer(methodNoParams.Variable),
+		NoReturn:         flags.StringBoolToPointer(methodNoReturn.Variable),
+		NoFieldsAccessed: flags.StringBoolToPointer(noFieldsAccessed.Variable),
+		NoMethodsCalled:  flags.StringBoolToPointer(noMethodsCalled.Variable),
 	}
-	method, err := codescout.ScoutMehod(filePath, methodConfig)
+	method, err := codescout.ScoutMethod(filePath, methodConfig)
 	if err != nil {
 		return err
 	}
-	fmt.Println(methodEnumOptions.GetOutputCallable(methodOutputType)(method))
+	fmt.Println(methodEnumOptions.GetOutputCallable(methodOutputType.Variable)(method))
 	return nil
 }

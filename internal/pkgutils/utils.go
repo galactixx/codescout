@@ -1,4 +1,4 @@
-package codescout
+package pkgutils
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-func fromEmptyMapKeysToSlice(someMap map[string]*int) []string {
+func FromEmptyMapKeysToSlice(someMap map[string]*int) []string {
 	fieldsAccessed := make([]string, 0, 10)
 	for key := range someMap {
 		fieldsAccessed = append(fieldsAccessed, key)
@@ -19,7 +19,7 @@ func fromEmptyMapKeysToSlice(someMap map[string]*int) []string {
 	return fieldsAccessed
 }
 
-func defaultTypeMap(nodeTypes []string) map[string]int {
+func DefaultTypeMap(nodeTypes []string) map[string]int {
 	nodeTypeMapping := make(map[string]int)
 	for _, nodeType := range nodeTypes {
 		_, ok := nodeTypeMapping[nodeType]
@@ -31,11 +31,11 @@ func defaultTypeMap(nodeTypes []string) map[string]int {
 	return nodeTypeMapping
 }
 
-func formatStructName(expr *ast.SelectorExpr) string {
-	return fmt.Sprintf("%s.%s", exprToString(expr.X), expr.Sel.Name)
+func FormatStructName(expr *ast.SelectorExpr) string {
+	return fmt.Sprintf("%s.%s", ExprToString(expr.X), expr.Sel.Name)
 }
 
-func exprToString(expr ast.Expr) string {
+func ExprToString(expr ast.Expr) string {
 	switch e := expr.(type) {
 	case *ast.Ident:
 		return e.Name
@@ -44,35 +44,26 @@ func exprToString(expr ast.Expr) string {
 	}
 }
 
-func nodeToCode(node any) string {
+func NodeToCode(node any) string {
 	var buf bytes.Buffer
 	printer.Fprint(&buf, token.NewFileSet(), node)
 	return buf.String()
 }
 
-func parseFile(src string, fset *token.FileSet) *ast.File {
+func ParseFile(src string, fset *token.FileSet) *ast.File {
 	node, _ := parser.ParseFile(fset, src, nil, parser.ParseComments)
 	return node
 }
 
-func parseSource(src string, fset *token.FileSet) *ast.File {
+func ParseSource(src string, fset *token.FileSet) *ast.File {
 	node, _ := parser.ParseFile(fset, "", src, parser.ParseComments)
 	return node
 }
 
-func filePathExists(path string) error {
+func FilePathExists(path string) error {
 	if _, err := os.Stat(path); err != nil {
 		err := errors.New("an existing file path must be passed")
 		return err
 	}
 	return nil
-}
-
-func inspectorGetNode[T any](inspector Inspector[T], symbol string) (*T, error) {
-	if len(inspector.getNodes()) == 0 {
-		errMsg := fmt.Sprintf("no %s was found based on configuration", symbol)
-		err := errors.New(errMsg)
-		return nil, err
-	}
-	return &(inspector.getNodes())[0], nil
 }

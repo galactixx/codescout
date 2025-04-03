@@ -1,8 +1,9 @@
-package utils
+package cmdutils
 
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/galactixx/codescout/pkg/codescout"
@@ -40,6 +41,14 @@ func CountFlagsSet(cmd *cobra.Command) int {
 		count++
 	})
 	return count
+}
+
+func FromStringToBool(stringBool string) *bool {
+	newBool, err := strconv.ParseBool(stringBool)
+	if err == nil {
+		return nil
+	}
+	return &newBool
 }
 
 func ArgsToParams(argTypes []string, parameterTypes *[]codescout.Parameter) error {

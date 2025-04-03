@@ -1,11 +1,23 @@
 package codescout
 
 import (
+	"errors"
+	"fmt"
 	"go/ast"
 	"go/token"
-	"strconv"
 	"strings"
+
+	"github.com/galactixx/codescout/internal/pkgutils"
 )
+
+func inspectorGetNode[T any](inspector Inspector[T], symbol string) (*T, error) {
+	if len(inspector.getNodes()) == 0 {
+		errMsg := fmt.Sprintf("no %s was found based on configuration", symbol)
+		err := errors.New(errMsg)
+		return nil, err
+	}
+	return &(inspector.getNodes())[0], nil
+}
 
 type Inspector[T any] interface {
 	isNodeMatch(name T) bool
@@ -75,7 +87,7 @@ func (i *structInspector) appendNode(node StructNode) {
 }
 
 func (i *structInspector) inspect() {
-	node := parseFile(i.Base.Path, i.Base.Fset)
+	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, i.inspector)
 }
 
@@ -120,13 +132,17 @@ type methodInspector struct {
 
 func (i methodInspector) isNodeMatch(node MethodNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	validReturns := returnTypeValidation(i.Config.ReturnTypes, node.CallableOps)
-	validParams := parameterTypeValidation(i.Config.Types, node.CallableOps)
+	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
+	validParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
-	hasPointerRec, err := strconv.ParseBool(i.Config.IsPointerRec)
-	validPtr := !(err == nil && hasPointerRec != node.HasPointerReceiver())
-	return nameEquals && validReturns && validParams && validReceiver && validPtr
+	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
+
+	accessed := fullAccessedMatch(i.Config.FieldsAccessed, i.Config.NoFieldsAccessed, node)
+	called := fullCalledMatch(i.Config.FieldsAccessed, i.Config.NoMethodsCalled, node)
+
+	return nameEquals && validReturns && validParams && validReceiver &&
+		validPtr && accessed && called
 }
 
 func (i *methodInspector) appendNode(node MethodNode) {
@@ -135,7 +151,7 @@ func (i *methodInspector) appendNode(node MethodNode) {
 }
 
 func (i *methodInspector) inspect() {
-	node := parseFile(i.Base.Path, i.Base.Fset)
+	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, i.inspector)
 }
 
@@ -147,7 +163,7 @@ func (i methodInspector) newMethod(name string, node ast.Node, comment string) M
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
 	return MethodNode{
 		Node:           baseNode,
-		CallableOps:    CallableNodeOps{node: funcNode},
+		CallableOps:    CallableOps{node: funcNode},
 		fieldsAccessed: make(map[string]*int),
 		methodsCalled:  make(map[string]*int),
 	}
@@ -203,8 +219,8 @@ type funcInspector struct {
 
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	nameNotEqual := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	invalidReturns := returnTypeValidation(i.Config.ReturnTypes, node.CallableOps)
-	invalidParams := parameterTypeValidation(i.Config.Types, node.CallableOps)
+	invalidReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
+	invalidParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
 	return nameNotEqual && invalidReturns && invalidParams
 }
 
@@ -214,7 +230,7 @@ func (i *funcInspector) appendNode(node FuncNode) {
 }
 
 func (i *funcInspector) inspect() {
-	node := parseFile(i.Base.Path, i.Base.Fset)
+	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, i.inspector)
 }
 
@@ -224,7 +240,7 @@ func (i funcInspector) getNodes() []FuncNode {
 
 func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
-	return FuncNode{Node: baseNode, CallableOps: CallableNodeOps{node: funcNode}}
+	return FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode}}
 }
 
 func (i *funcInspector) inspector(n ast.Node) bool {
