@@ -4,6 +4,16 @@ import (
 	"github.com/galactixx/codescout/internal/validation"
 )
 
+func fullReturnMatch(types []string, boolVar *bool, ops CallableOps) bool {
+	return boolMatch(boolVar, ops.ReturnTypes()) &&
+		returnMatch(types, ops)
+}
+
+func fullParamsMatch(types []Parameter, boolVar *bool, ops CallableOps) bool {
+	return boolMatch(boolVar, ops.Parameters()) &&
+		parameterMatch(types, ops)
+}
+
 func returnMatch(returns []string, ops CallableOps) bool {
 	validation := validation.TypeValidation{TypeMap: ops.returnTypesMap()}
 	for _, returnType := range returns {
@@ -61,16 +71,6 @@ func fullAccessedMatch(fields []string, boolVar *bool, node MethodNode) bool {
 func fullCalledMatch(methods []string, boolVar *bool, node MethodNode) bool {
 	return boolMatch(boolVar, methods) &&
 		accessedMatch(methods, node.methodsCalled)
-}
-
-func fullReturnMatch(types []string, boolVar *bool, ops CallableOps) bool {
-	return boolMatch(boolVar, ops.ReturnTypes()) &&
-		returnMatch(types, ops)
-}
-
-func fullParamsMatch(types []Parameter, boolVar *bool, ops CallableOps) bool {
-	return boolMatch(boolVar, ops.Parameters()) &&
-		parameterMatch(types, ops)
 }
 
 type CallableTypes interface {

@@ -21,17 +21,17 @@ type FuncConfig struct {
 }
 
 type MethodConfig struct {
-	Name             string
-	Types            []Parameter
-	ReturnTypes      []string
-	Receiver         string
-	IsPointerRec     *bool
-	FieldsAccessed   []string
-	MethodsCalled    []string
-	NoParams         *bool
-	NoReturn         *bool
-	NoFieldsAccessed *bool
-	NoMethodsCalled  *bool
+	Name         string
+	Types        []Parameter
+	ReturnTypes  []string
+	Receiver     string
+	IsPointerRec *bool
+	Fields       []string
+	Methods      []string
+	NoParams     *bool
+	NoReturn     *bool
+	NoFields     *bool
+	NoMethods    *bool
 }
 
 type StructConfig struct {
@@ -48,12 +48,12 @@ func ScoutFunction(path string, config FuncConfig) (*FuncNode, error) {
 	batchValidation := validation.BatchConfigValidation{
 		SliceValidators: []validation.SliceValidator{
 			validation.SlicePairToValidate[Parameter]{
-				Slice: validation.Argument[[]Parameter]{Name: "Types", Variable: config.Types},
-				Bool:  validation.Argument[*bool]{Name: "NoParams", Variable: config.NoParams},
+				Slice: validation.Arg("Types", config.Types),
+				Bool:  validation.Arg("NoParams", config.NoParams),
 			},
 			validation.SlicePairToValidate[string]{
-				Slice: validation.Argument[[]string]{Name: "ReturnTypes", Variable: config.ReturnTypes},
-				Bool:  validation.Argument[*bool]{Name: "NoReturn", Variable: config.NoReturn},
+				Slice: validation.Arg("ReturnTypes", config.ReturnTypes),
+				Bool:  validation.Arg("NoReturn", config.NoReturn),
 			},
 		},
 	}
@@ -94,20 +94,20 @@ func ScoutMethod(path string, config MethodConfig) (*MethodNode, error) {
 	batchValidation := validation.BatchConfigValidation{
 		SliceValidators: []validation.SliceValidator{
 			validation.SlicePairToValidate[string]{
-				Slice: validation.Argument[[]string]{Name: "FieldsAccessed", Variable: config.FieldsAccessed},
-				Bool:  validation.Argument[*bool]{Name: "NoFieldsAccessed", Variable: config.NoFieldsAccessed},
+				Slice: validation.Arg("Fields", config.Fields),
+				Bool:  validation.Arg("NoFields", config.NoFields),
 			},
 			validation.SlicePairToValidate[string]{
-				Slice: validation.Argument[[]string]{Name: "MethodsCalled", Variable: config.MethodsCalled},
-				Bool:  validation.Argument[*bool]{Name: "NoMethodsCalled", Variable: config.NoMethodsCalled},
+				Slice: validation.Arg("Methods", config.Methods),
+				Bool:  validation.Arg("NoMethods", config.NoMethods),
+			},
+			validation.SlicePairToValidate[string]{
+				Slice: validation.Arg("ReturnTypes", config.ReturnTypes),
+				Bool:  validation.Arg("NoReturn", config.NoReturn),
 			},
 			validation.SlicePairToValidate[Parameter]{
-				Slice: validation.Argument[[]Parameter]{Name: "Types", Variable: config.Types},
-				Bool:  validation.Argument[*bool]{Name: "NoParams", Variable: config.NoParams},
-			},
-			validation.SlicePairToValidate[string]{
-				Slice: validation.Argument[[]string]{Name: "ReturnTypes", Variable: config.ReturnTypes},
-				Bool:  validation.Argument[*bool]{Name: "NoReturn", Variable: config.NoReturn},
+				Slice: validation.Arg("Types", config.Types),
+				Bool:  validation.Arg("NoParams", config.NoParams),
 			},
 		},
 	}

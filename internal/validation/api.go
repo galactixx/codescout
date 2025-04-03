@@ -7,6 +7,10 @@ type Argument[T any] struct {
 	Variable T
 }
 
+func Arg[T any](name string, variable T) Argument[T] {
+	return Argument[T]{Name: name, Variable: variable}
+}
+
 type SliceValidator interface {
 	TrueMessage() error
 	FalseMessage() error

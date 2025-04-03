@@ -109,17 +109,17 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	methodConfig := codescout.MethodConfig{
-		Name:             methodName.Variable,
-		Types:            methodTypes,
-		ReturnTypes:      methodReturnTypes.Variable,
-		Receiver:         methodReceiver.Variable,
-		IsPointerRec:     flags.StringBoolToPointer(hasPointerReceiver.Variable),
-		FieldsAccessed:   fieldsAccessed.Variable,
-		MethodsCalled:    methodsCalled.Variable,
-		NoParams:         flags.StringBoolToPointer(methodNoParams.Variable),
-		NoReturn:         flags.StringBoolToPointer(methodNoReturn.Variable),
-		NoFieldsAccessed: flags.StringBoolToPointer(noFieldsAccessed.Variable),
-		NoMethodsCalled:  flags.StringBoolToPointer(noMethodsCalled.Variable),
+		Name:         methodName.Variable,
+		Types:        methodTypes,
+		ReturnTypes:  methodReturnTypes.Variable,
+		Receiver:     methodReceiver.Variable,
+		IsPointerRec: flags.StringBoolToPointer(hasPointerReceiver.Variable),
+		Fields:       fieldsAccessed.Variable,
+		Methods:      methodsCalled.Variable,
+		NoParams:     flags.StringBoolToPointer(methodNoParams.Variable),
+		NoReturn:     flags.StringBoolToPointer(methodNoReturn.Variable),
+		NoFields:     flags.StringBoolToPointer(noFieldsAccessed.Variable),
+		NoMethods:    flags.StringBoolToPointer(noMethodsCalled.Variable),
 	}
 	method, err := codescout.ScoutMethod(filePath, methodConfig)
 	if err != nil {

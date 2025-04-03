@@ -81,21 +81,21 @@ func (f MethodNode) ReceiverType() string {
 	structType := f.CallableOps.node.Recv.List[0].Type
 	switch expr := structType.(type) {
 	case *ast.Ident:
-		// e.g. (m MyStruct)
+		// -> m MyStruct
 		return expr.Name
 	case *ast.StarExpr:
 		switch selExpr := expr.X.(type) {
 		case *ast.SelectorExpr:
-			// e.g. (m *pkg.MyStruct)
+			// -> m *pkg.MyStruct
 			return pkgutils.FormatStructName(selExpr)
 		case *ast.Ident:
-			// e.g. (m *MyStruct)
+			// -> m *MyStruct
 			return selExpr.Name
 		default:
 			return ""
 		}
 	case *ast.SelectorExpr:
-		// e.g. (m pkg.MyStruct)
+		// -> m pkg.MyStruct
 		return pkgutils.FormatStructName(expr)
 	default:
 		return ""

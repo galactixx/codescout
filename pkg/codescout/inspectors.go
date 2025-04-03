@@ -10,7 +10,7 @@ import (
 	"github.com/galactixx/codescout/internal/pkgutils"
 )
 
-func inspectorGetNode[T any](inspector Inspector[T], symbol string) (*T, error) {
+func inspectorGetNode[T any](inspector inspector[T], symbol string) (*T, error) {
 	if len(inspector.getNodes()) == 0 {
 		errMsg := fmt.Sprintf("no %s was found based on configuration", symbol)
 		err := errors.New(errMsg)
@@ -19,7 +19,7 @@ func inspectorGetNode[T any](inspector Inspector[T], symbol string) (*T, error) 
 	return &(inspector.getNodes())[0], nil
 }
 
-type Inspector[T any] interface {
+type inspector[T any] interface {
 	isNodeMatch(name T) bool
 	appendNode(node T)
 	inspector(n ast.Node) bool
@@ -138,8 +138,8 @@ func (i methodInspector) isNodeMatch(node MethodNode) bool {
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
 
-	accessed := fullAccessedMatch(i.Config.FieldsAccessed, i.Config.NoFieldsAccessed, node)
-	called := fullCalledMatch(i.Config.FieldsAccessed, i.Config.NoMethodsCalled, node)
+	accessed := fullAccessedMatch(i.Config.Fields, i.Config.NoFields, node)
+	called := fullCalledMatch(i.Config.Fields, i.Config.NoMethods, node)
 
 	return nameEquals && validReturns && validParams && validReceiver &&
 		validPtr && accessed && called
