@@ -51,7 +51,7 @@ func FromStringToBool(stringBool string) *bool {
 	return &newBool
 }
 
-func ArgsToParams(argTypes []string, parameterTypes *[]codescout.Parameter) error {
+func ArgsToParams(argTypes []string, parameterTypes *[]codescout.NamedType) error {
 	for _, parameter := range argTypes {
 		if strings.Count(parameter, ":") != 1 {
 			return errors.New("there must be only one colon separating out the name and type")
@@ -64,7 +64,7 @@ func ArgsToParams(argTypes []string, parameterTypes *[]codescout.Parameter) erro
 		if paramName == "" && paramType == "" {
 			return errors.New("at least one of the type or name must be defined")
 		}
-		param := codescout.Parameter{Name: paramName, Type: paramType}
+		param := codescout.NamedType{Name: paramName, Type: paramType}
 		*parameterTypes = append(*parameterTypes, param)
 	}
 	return nil

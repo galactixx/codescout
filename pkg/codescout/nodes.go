@@ -1,7 +1,6 @@
 package codescout
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -9,6 +8,17 @@ import (
 
 	"github.com/galactixx/codescout/internal/pkgutils"
 )
+
+func fieldListToNamedTypes(fields ast.FieldList, fset *token.FileSet) []NamedType {
+	fieldList := make([]NamedType, 0, len(fields.List))
+	for _, field := range fields.List {
+		for _, name := range field.Names {
+			named := NamedType{Name: name.Name, Type: pkgutils.NodeToCode(fset, field.Type)}
+			fieldList = append(fieldList, named)
+		}
+	}
+	return fieldList
+}
 
 type NodeInfo interface {
 	Code() string
@@ -26,16 +36,50 @@ type BaseNode struct {
 }
 
 type StructNode struct {
-	Node BaseNode
-	node *ast.StructType
+	Node    BaseNode
+	Methods []MethodNode
+
+	node    *ast.StructType
+	spec    *ast.TypeSpec
+	genNode *ast.GenDecl
+	fset    *token.FileSet
+}
+
+func (s StructNode) Fields() []NamedType {
+	return fieldListToNamedTypes(*s.node.Fields, s.fset)
 }
 
 func (s StructNode) Code() string {
-	return ""
+	return pkgutils.NodeToCode(s.fset, s.genNode)
 }
 
 func (s StructNode) PrintNode() {
 	fmt.Println(s.Code())
+}
+
+func (s StructNode) Body() string {
+	structFields := pkgutils.NodeToCode(s.fset, s.node)
+	structFields = strings.Replace(structFields, "struct", "", 1)
+	structFields = strings.TrimSpace(structFields)
+	return structFields
+}
+
+func (s StructNode) Signature() string {
+	signature := s.Node.Name
+	if s.spec.TypeParams != nil {
+		var params []string
+		for _, field := range s.spec.TypeParams.List {
+			for _, name := range field.Names {
+				params = append(params, name.Name)
+			}
+		}
+		signature += "[" + strings.Join(params, ", ") + "]"
+	}
+	return signature
+}
+
+func (s StructNode) Comments() string {
+	return pkgutils.CommentGroupToString(s.genNode.Doc)
 }
 
 type MethodNode struct {
@@ -158,23 +202,12 @@ func (f CallableOps) ParametersMap() map[string]string {
 	return parameters
 }
 
-func (f CallableOps) Parameters() []Parameter {
-	parameters := make([]Parameter, 0, 5)
-	for _, parameter := range f.node.Type.Params.List {
-		for _, name := range parameter.Names {
-			parameter := Parameter{Name: name.Name, Type: pkgutils.NodeToCode(f.fset, parameter.Type)}
-			parameters = append(parameters, parameter)
-		}
-	}
-	return parameters
+func (f CallableOps) Parameters() []NamedType {
+	return fieldListToNamedTypes(*f.node.Type.Params, f.fset)
 }
 
 func (f CallableOps) Comments() string {
-	var buf bytes.Buffer
-	for _, comment := range f.node.Doc.List {
-		buf.WriteString(comment.Text)
-	}
-	return buf.String()
+	return pkgutils.CommentGroupToString(f.node.Doc)
 }
 
 func (f CallableOps) Body() string {

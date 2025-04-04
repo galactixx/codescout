@@ -26,7 +26,7 @@ var (
 )
 
 var methodEnumOptions = cmdutils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
-	"declaration":      func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
+	"definition":       func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
 	"body":             func(node *codescout.MethodNode) any { return node.CallableOps.Body() },
 	"signature":        func(node *codescout.MethodNode) any { return node.CallableOps.Signature() },
 	"comment":          func(node *codescout.MethodNode) any { return node.CallableOps.Comments() },
@@ -80,7 +80,7 @@ func init() {
 		methodCmd,
 		&methodOutputType,
 		"o",
-		"declaration",
+		"definition",
 		fmt.Sprintf("Part of method to output, must be one of: %v", methodEnumOptions.ToOptionString()),
 	)
 }
@@ -97,7 +97,7 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 		return validationErr
 	}
 
-	methodTypes := make([]codescout.Parameter, 0, 5)
+	methodTypes := make([]codescout.NamedType, 0, 5)
 	err := cmdutils.ArgsToParams(methodParameterTypes.Variable, &methodTypes)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 
 	methodConfig := codescout.MethodConfig{
 		Name:         methodName.Variable,
-		Types:        methodTypes,
+		ParamTypes:   methodTypes,
 		ReturnTypes:  methodReturnTypes.Variable,
 		Receiver:     methodReceiver.Variable,
 		IsPointerRec: flags.StringBoolToPointer(hasPointerReceiver.Variable),

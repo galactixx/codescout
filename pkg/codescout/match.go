@@ -9,7 +9,7 @@ func fullReturnMatch(types []string, boolVar *bool, ops CallableOps) bool {
 		returnMatch(types, ops)
 }
 
-func fullParamsMatch(types []Parameter, boolVar *bool, ops CallableOps) bool {
+func fullParamsMatch(types []NamedType, boolVar *bool, ops CallableOps) bool {
 	return boolMatch(boolVar, ops.Parameters()) &&
 		parameterMatch(types, ops)
 }
@@ -26,7 +26,7 @@ func returnMatch(returns []string, ops CallableOps) bool {
 	return true
 }
 
-func parameterMatch(params []Parameter, ops CallableOps) bool {
+func parameterMatch(params []NamedType, ops CallableOps) bool {
 	validation := validation.TypeValidation{
 		TypeMap:      ops.parameterTypeMap(),
 		ParameterMap: ops.ParametersMap(),
@@ -74,7 +74,7 @@ func fullCalledMatch(methods []string, boolVar *bool, node MethodNode) bool {
 }
 
 type CallableTypes interface {
-	~[]string | ~[]Parameter
+	~[]string | ~[]NamedType
 }
 
 func boolMatch[T CallableTypes](boolVar *bool, nodeTypes T) bool {

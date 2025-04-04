@@ -67,3 +67,14 @@ func FilePathExists(path string) error {
 	}
 	return nil
 }
+
+func CommentGroupToString(comment *ast.CommentGroup) string {
+	if comment == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	for _, comment := range comment.List {
+		buf.WriteString(comment.Text)
+	}
+	return buf.String()
+}

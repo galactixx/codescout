@@ -1,23 +1,12 @@
 package codescout
 
 import (
-	"errors"
-	"fmt"
 	"go/ast"
 	"go/token"
 	"strings"
 
 	"github.com/galactixx/codescout/internal/pkgutils"
 )
-
-func inspectorGetNode[T any](inspector inspector[T], symbol string) (*T, error) {
-	if len(inspector.getNodes()) == 0 {
-		errMsg := fmt.Sprintf("no %s was found based on configuration", symbol)
-		err := errors.New(errMsg)
-		return nil, err
-	}
-	return &(inspector.getNodes())[0], nil
-}
 
 type inspector[T any] interface {
 	isNodeMatch(name T) bool
@@ -28,17 +17,16 @@ type inspector[T any] interface {
 }
 
 type baseInspector struct {
-	Path  string
-	Fset  *token.FileSet
-	Count int
+	Path string
+	Fset *token.FileSet
 }
 
-func (i baseInspector) inspect(node ast.Node, inspector func(n ast.Node) bool) {
+func (i baseInspector) inspect(node ast.Node, inspectors []func(n ast.Node) bool) {
 	ast.Inspect(node, func(n ast.Node) bool {
-		if i.Count > 0 {
-			return false
+		for _, inspector := range inspectors {
+			inspector(n)
 		}
-		return inspector(n)
+		return true
 	})
 }
 
@@ -52,10 +40,6 @@ func (i baseInspector) newNode(name string, node ast.Node, comment string) BaseN
 		Exported:   token.IsExported(name),
 		Comment:    strings.TrimSpace(comment),
 	}
-}
-
-func (i *baseInspector) increment() {
-	i.Count += 1
 }
 
 func (i baseInspector) getCallableNodes(name string, node ast.Node, comment string) (BaseNode, *ast.FuncDecl) {
@@ -72,37 +56,55 @@ func (i baseInspector) getPos(node ast.Node) (int, int) {
 }
 
 type structInspector struct {
-	Nodes  []StructNode
+	Nodes  map[string]*StructNode
 	Config StructConfig
 	Base   baseInspector
 }
 
 func (i structInspector) isNodeMatch(node StructNode) bool {
-	return true
+	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
+	return nameEquals
 }
 
 func (i *structInspector) appendNode(node StructNode) {
-	i.Nodes = append(i.Nodes, node)
-	i.Base.increment()
+	i.Nodes[node.Node.Name] = &node
 }
 
 func (i *structInspector) inspect() {
+	methodsInspect := methodInspector{
+		Nodes:  []MethodNode{},
+		Config: MethodConfig{},
+		Base:   i.Base,
+	}
+
 	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
-	i.Base.inspect(node, i.inspector)
+	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector, methodsInspect.inspector})
+
+	for _, methodNode := range methodsInspect.Nodes {
+		if structNode, ok := i.Nodes[methodNode.ReceiverType()]; ok {
+			structNode.Methods = append(structNode.Methods, methodNode)
+		}
+	}
 }
 
 func (i *structInspector) getNodes() []StructNode {
-	return i.Nodes
+	structNodes := make([]StructNode, 0, len(i.Nodes))
+	for _, node := range i.Nodes {
+		structNodes = append(structNodes, *node)
+	}
+	return structNodes
 }
 
-func (i structInspector) newStruct(node ast.Node, spec *ast.TypeSpec) StructNode {
+func (i structInspector) newStruct(node ast.Node, gen *ast.GenDecl, spec *ast.TypeSpec) StructNode {
 	var comment string = ""
-	if spec.Doc != nil {
-		comment = spec.Doc.Text()
+	if gen.Doc != nil {
+		comment = gen.Doc.Text()
 	}
 	baseNode := i.Base.newNode(spec.Name.Name, node, comment)
 	structNode := node.(*ast.StructType)
-	return StructNode{Node: baseNode, node: structNode}
+	return StructNode{
+		Node: baseNode, node: structNode, spec: spec, genNode: gen, fset: i.Base.Fset,
+	}
 }
 
 func (i *structInspector) inspector(node ast.Node) bool {
@@ -114,7 +116,7 @@ func (i *structInspector) inspector(node ast.Node) bool {
 	for _, spec := range genDecl.Specs {
 		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 			if structType, ok := typeSpec.Type.(*ast.StructType); ok {
-				structNode := i.newStruct(structType, typeSpec)
+				structNode := i.newStruct(structType, genDecl, typeSpec)
 				if i.isNodeMatch(structNode) {
 					i.appendNode(structNode)
 				}
@@ -133,7 +135,7 @@ type methodInspector struct {
 func (i methodInspector) isNodeMatch(node MethodNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
 	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
+	validParams := fullParamsMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps)
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
@@ -148,12 +150,11 @@ func (i methodInspector) isAttrsMatch(node MethodNode) bool {
 
 func (i *methodInspector) appendNode(node MethodNode) {
 	i.Nodes = append(i.Nodes, node)
-	i.Base.increment()
 }
 
 func (i *methodInspector) inspect() {
 	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
-	i.Base.inspect(node, i.inspector)
+	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
 func (i methodInspector) getNodes() []MethodNode {
@@ -223,18 +224,17 @@ type funcInspector struct {
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
 	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
+	validParams := fullParamsMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps)
 	return nameEquals && validReturns && validParams
 }
 
 func (i *funcInspector) appendNode(node FuncNode) {
 	i.Nodes = append(i.Nodes, node)
-	i.Base.increment()
 }
 
 func (i *funcInspector) inspect() {
 	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
-	i.Base.inspect(node, i.inspector)
+	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
 func (i funcInspector) getNodes() []FuncNode {

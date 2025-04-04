@@ -20,11 +20,11 @@ var (
 )
 
 var funcEnumOptions = cmdutils.EnumOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) any{
-	"declaration": func(node *codescout.FuncNode) any { return node.CallableOps.Code() },
-	"body":        func(node *codescout.FuncNode) any { return node.CallableOps.Body() },
-	"signature":   func(node *codescout.FuncNode) any { return node.CallableOps.Signature() },
-	"comment":     func(node *codescout.FuncNode) any { return node.CallableOps.Comments() },
-	"return":      func(node *codescout.FuncNode) any { return node.CallableOps.ReturnType() },
+	"definition": func(node *codescout.FuncNode) any { return node.CallableOps.Code() },
+	"body":       func(node *codescout.FuncNode) any { return node.CallableOps.Body() },
+	"signature":  func(node *codescout.FuncNode) any { return node.CallableOps.Signature() },
+	"comment":    func(node *codescout.FuncNode) any { return node.CallableOps.Comments() },
+	"return":     func(node *codescout.FuncNode) any { return node.CallableOps.ReturnType() },
 }}
 
 var funcBatchValidator = flags.BatchValidator{
@@ -56,7 +56,7 @@ func init() {
 		funcCmd,
 		&funcOutputType,
 		"o",
-		"declaration",
+		"definition",
 		fmt.Sprintf("Part of function to output, must be one of: %v", funcEnumOptions.ToOptionString()),
 	)
 }
@@ -73,7 +73,7 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		return validationErr
 	}
 
-	functionTypes := make([]codescout.Parameter, 0, 5)
+	functionTypes := make([]codescout.NamedType, 0, 5)
 	err := cmdutils.ArgsToParams(funcParameterTypes.Variable, &functionTypes)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 
 	functionConfig := codescout.FuncConfig{
 		Name:        funcName.Variable,
-		Types:       functionTypes,
+		ParamTypes:  functionTypes,
 		ReturnTypes: funcReturnTypes.Variable,
 		NoParams:    flags.StringBoolToPointer(funcNoParams.Variable),
 		NoReturn:    flags.StringBoolToPointer(funcNoReturn.Variable),
