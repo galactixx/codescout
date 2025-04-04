@@ -33,7 +33,7 @@ var methodEnumOptions = cmdutils.EnumOptions[*codescout.MethodNode]{Options: map
 	"return":           func(node *codescout.MethodNode) any { return node.CallableOps.ReturnType() },
 	"receiver":         func(node *codescout.MethodNode) any { return node.ReceiverType() },
 	"receiver-fields":  func(node *codescout.MethodNode) any { return node.FieldsAccessed() },
-	"recevier-methods": func(node *codescout.MethodNode) any { return node.MethodsCalled() },
+	"receiver-methods": func(node *codescout.MethodNode) any { return node.MethodsCalled() },
 }}
 
 var methodBatchValidator = flags.BatchValidator{
@@ -89,7 +89,7 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 
 	if cmdutils.CountFlagsSet(cmd) == 0 {
-		return errors.New("at least one flag must be set for the func command")
+		return errors.New("at least one flag must be set for the method command")
 	}
 
 	validationErr := methodBatchValidator.Validate(cmd)

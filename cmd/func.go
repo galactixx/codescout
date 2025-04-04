@@ -88,8 +88,8 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		Name:        funcName.Variable,
 		Types:       functionTypes,
 		ReturnTypes: funcReturnTypes.Variable,
-		NoParams:    flags.StringBoolToPointer(methodNoParams.Variable),
-		NoReturn:    flags.StringBoolToPointer(methodNoReturn.Variable),
+		NoParams:    flags.StringBoolToPointer(funcNoParams.Variable),
+		NoReturn:    flags.StringBoolToPointer(funcNoReturn.Variable),
 	}
 	function, err := codescout.ScoutFunction(filePath, functionConfig)
 	if err != nil {

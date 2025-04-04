@@ -137,12 +137,13 @@ func (i methodInspector) isNodeMatch(node MethodNode) bool {
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
+	return nameEquals && validReturns && validParams && validReceiver && validPtr
+}
 
+func (i methodInspector) isAttrsMatch(node MethodNode) bool {
 	accessed := fullAccessedMatch(i.Config.Fields, i.Config.NoFields, node)
-	called := fullCalledMatch(i.Config.Fields, i.Config.NoMethods, node)
-
-	return nameEquals && validReturns && validParams && validReceiver &&
-		validPtr && accessed && called
+	called := fullCalledMatch(i.Config.Methods, i.Config.NoMethods, node)
+	return accessed && called
 }
 
 func (i *methodInspector) appendNode(node MethodNode) {
@@ -163,7 +164,7 @@ func (i methodInspector) newMethod(name string, node ast.Node, comment string) M
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
 	return MethodNode{
 		Node:           baseNode,
-		CallableOps:    CallableOps{node: funcNode},
+		CallableOps:    CallableOps{node: funcNode, fset: i.Base.Fset},
 		fieldsAccessed: make(map[string]*int),
 		methodsCalled:  make(map[string]*int),
 	}
@@ -205,7 +206,9 @@ func (i *methodInspector) inspector(n ast.Node) bool {
 			parentStack = append(parentStack, n)
 			return true
 		})
-		i.appendNode(methodNode)
+		if i.isAttrsMatch(methodNode) {
+			i.appendNode(methodNode)
+		}
 	}
 
 	return true
@@ -218,10 +221,10 @@ type funcInspector struct {
 }
 
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
-	nameNotEqual := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	invalidReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	invalidParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
-	return nameNotEqual && invalidReturns && invalidParams
+	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
+	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
+	validParams := fullParamsMatch(i.Config.Types, i.Config.NoParams, node.CallableOps)
+	return nameEquals && validReturns && validParams
 }
 
 func (i *funcInspector) appendNode(node FuncNode) {
@@ -240,7 +243,7 @@ func (i funcInspector) getNodes() []FuncNode {
 
 func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
-	return FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode}}
+	return FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode, fset: i.Base.Fset}}
 }
 
 func (i *funcInspector) inspector(n ast.Node) bool {

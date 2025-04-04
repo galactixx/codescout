@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/token"
+	"strings"
 
 	"github.com/galactixx/codescout/internal/pkgutils"
 )
@@ -29,7 +31,7 @@ type StructNode struct {
 }
 
 func (s StructNode) Code() string {
-	return pkgutils.NodeToCode(s.node)
+	return ""
 }
 
 func (s StructNode) PrintNode() {
@@ -124,6 +126,8 @@ func (f FuncNode) PrintComments() {
 
 type CallableOps struct {
 	node *ast.FuncDecl
+
+	fset *token.FileSet
 }
 
 func (f CallableOps) PrintReturnType() {
@@ -158,7 +162,7 @@ func (f CallableOps) Parameters() []Parameter {
 	parameters := make([]Parameter, 0, 5)
 	for _, parameter := range f.node.Type.Params.List {
 		for _, name := range parameter.Names {
-			parameter := Parameter{Name: name.Name, Type: pkgutils.NodeToCode(parameter.Type)}
+			parameter := Parameter{Name: name.Name, Type: pkgutils.NodeToCode(f.fset, parameter.Type)}
 			parameters = append(parameters, parameter)
 		}
 	}
@@ -174,13 +178,13 @@ func (f CallableOps) Comments() string {
 }
 
 func (f CallableOps) Body() string {
-	return pkgutils.NodeToCode(f.node.Body)
+	return pkgutils.NodeToCode(f.fset, f.node.Body)
 }
 
 func (f CallableOps) Code() string {
 	nodeOriginalDoc := f.node.Doc
 	f.node.Doc = nil
-	codeString := pkgutils.NodeToCode(f.node)
+	codeString := pkgutils.NodeToCode(f.fset, f.node)
 	f.node.Doc = nodeOriginalDoc
 	if f.node.Doc == nil {
 		return codeString
@@ -190,7 +194,7 @@ func (f CallableOps) Code() string {
 }
 
 func (f CallableOps) Signature() string {
-	return pkgutils.NodeToCode(&ast.FuncDecl{
+	return pkgutils.NodeToCode(f.fset, &ast.FuncDecl{
 		Name: f.node.Name,
 		Type: f.node.Type,
 	})
@@ -201,14 +205,22 @@ func (f CallableOps) returnTypesMap() map[string]int {
 }
 
 func (f CallableOps) ReturnType() string {
-	return pkgutils.NodeToCode(f.node.Type.Results)
+	nodeReturnTypes := f.ReturnTypes()
+	switch len(nodeReturnTypes) {
+	case 0:
+		return ""
+	case 1:
+		return nodeReturnTypes[0]
+	default:
+		return "(" + strings.Join(nodeReturnTypes, ", ") + ")"
+	}
 }
 
 func (f CallableOps) ReturnTypes() []string {
 	returnTypes := make([]string, 0, 5)
 	if f.node.Type.Results != nil {
 		for _, returnType := range f.node.Type.Results.List {
-			returnTypes = append(returnTypes, pkgutils.NodeToCode(returnType.Type))
+			returnTypes = append(returnTypes, pkgutils.NodeToCode(f.fset, returnType.Type))
 		}
 	}
 	return returnTypes

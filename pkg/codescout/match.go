@@ -64,12 +64,12 @@ func accessedMatch(fields []string, nodeMap map[string]*int) bool {
 }
 
 func fullAccessedMatch(fields []string, boolVar *bool, node MethodNode) bool {
-	return boolMatch(boolVar, fields) &&
+	return boolMatch(boolVar, node.FieldsAccessed()) &&
 		accessedMatch(fields, node.fieldsAccessed)
 }
 
 func fullCalledMatch(methods []string, boolVar *bool, node MethodNode) bool {
-	return boolMatch(boolVar, methods) &&
+	return boolMatch(boolVar, node.MethodsCalled()) &&
 		accessedMatch(methods, node.methodsCalled)
 }
 

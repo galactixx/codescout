@@ -44,9 +44,9 @@ func ExprToString(expr ast.Expr) string {
 	}
 }
 
-func NodeToCode(node any) string {
+func NodeToCode(fset *token.FileSet, node any) string {
 	var buf bytes.Buffer
-	printer.Fprint(&buf, token.NewFileSet(), node)
+	printer.Fprint(&buf, fset, node)
 	return buf.String()
 }
 
