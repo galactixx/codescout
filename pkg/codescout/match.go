@@ -1,6 +1,7 @@
 package codescout
 
 import (
+	"github.com/galactixx/codescout/internal/pkgutils"
 	"github.com/galactixx/codescout/internal/validation"
 )
 
@@ -9,9 +10,9 @@ func fullReturnMatch(types []string, boolVar *bool, ops CallableOps) bool {
 		returnMatch(types, ops)
 }
 
-func fullParamsMatch(types []NamedType, boolVar *bool, ops CallableOps) bool {
-	return boolMatch(boolVar, ops.Parameters()) &&
-		parameterMatch(types, ops)
+func fullTypesMatch(types []NamedType, boolVar *bool, nodeTypes []NamedType) bool {
+	return boolMatch(boolVar, nodeTypes) &&
+		namedTypesMatch(types, nodeTypes)
 }
 
 func returnMatch(returns []string, ops CallableOps) bool {
@@ -26,14 +27,14 @@ func returnMatch(returns []string, ops CallableOps) bool {
 	return true
 }
 
-func parameterMatch(params []NamedType, ops CallableOps) bool {
+func namedTypesMatch(configTypes []NamedType, nodeTypes []NamedType) bool {
 	validation := validation.TypeValidation{
-		TypeMap:      ops.parameterTypeMap(),
-		ParameterMap: ops.ParametersMap(),
+		TypeMap:       namedTypesMapOfTypes(nodeTypes),
+		NamedTypesMap: namedTypesMap(nodeTypes),
 	}
 	var parameterType string
 
-	for _, parameter := range params {
+	for _, parameter := range configTypes {
 		validation.SetParamInfo(parameter.Name, parameter.Type)
 		validation.SetNameInParams(parameter.Name)
 
@@ -79,4 +80,20 @@ type CallableTypes interface {
 
 func boolMatch[T CallableTypes](boolVar *bool, nodeTypes T) bool {
 	return boolVar == nil || (*boolVar == (len(nodeTypes) == 0))
+}
+
+func namedTypesMapOfTypes(namedTypes []NamedType) map[string]int {
+	var parameterTypes []string
+	for _, parameter := range namedTypes {
+		parameterTypes = append(parameterTypes, parameter.Type)
+	}
+	return pkgutils.DefaultTypeMap(parameterTypes)
+}
+
+func namedTypesMap(namedTypes []NamedType) map[string]string {
+	parameters := make(map[string]string)
+	for _, parameter := range namedTypes {
+		parameters[parameter.Name] = parameter.Type
+	}
+	return parameters
 }

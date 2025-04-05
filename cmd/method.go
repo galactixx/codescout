@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/galactixx/codescout/internal/cmdutils"
@@ -25,7 +24,7 @@ var (
 	noMethodsCalled      = flags.CommandFlag[string]{Name: "no-methods"}
 )
 
-var methodEnumOptions = cmdutils.EnumOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
+var methodOptions = cmdutils.OutputOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
 	"definition":       func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
 	"body":             func(node *codescout.MethodNode) any { return node.CallableOps.Body() },
 	"signature":        func(node *codescout.MethodNode) any { return node.CallableOps.Signature() },
@@ -52,6 +51,13 @@ var methodBatchValidator = flags.BatchValidator{
 		&noMethodsCalled,
 		&hasPointerReceiver,
 	},
+}
+
+var methodCommandValidation = cmdutils.CobraCommandVlidation[*codescout.MethodNode]{
+	Validator:      methodBatchValidator,
+	NamedTypesFlag: methodParameterTypes,
+	OutputTypeFlag: methodOutputType,
+	OutputOptions:  methodOptions,
 }
 
 var methodCmd = &cobra.Command{
@@ -81,36 +87,20 @@ func init() {
 		&methodOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("Part of method to output, must be one of: %v", methodEnumOptions.ToOptionString()),
+		fmt.Sprintf("Part of method to output, must be one of: %v", methodOptions.ToOptionString()),
 	)
 }
 
 func methodCmdRun(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
-
-	if cmdutils.CountFlagsSet(cmd) == 0 {
-		return errors.New("at least one flag must be set for the method command")
-	}
-
-	validationErr := methodBatchValidator.Validate(cmd)
+	validationErr := methodCommandValidation.CommandValidation(cmd)
 	if validationErr != nil {
 		return validationErr
 	}
 
-	methodTypes := make([]codescout.NamedType, 0, 5)
-	err := cmdutils.ArgsToParams(methodParameterTypes.Variable, &methodTypes)
-	if err != nil {
-		return err
-	}
-
-	outputErr := methodEnumOptions.EnumValidation(cmd, "output", methodOutputType.Variable)
-	if outputErr != nil {
-		return outputErr
-	}
-
 	methodConfig := codescout.MethodConfig{
 		Name:         methodName.Variable,
-		ParamTypes:   methodTypes,
+		ParamTypes:   methodCommandValidation.GetNamedTypes(),
 		ReturnTypes:  methodReturnTypes.Variable,
 		Receiver:     methodReceiver.Variable,
 		IsPointerRec: flags.StringBoolToPointer(hasPointerReceiver.Variable),
@@ -125,6 +115,6 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(methodEnumOptions.GetOutputCallable(methodOutputType.Variable)(method))
+	fmt.Println(methodOptions.GetOutputCallable(methodOutputType.Variable)(method))
 	return nil
 }

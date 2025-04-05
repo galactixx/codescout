@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/galactixx/codescout/internal/cmdutils"
@@ -17,7 +16,7 @@ var (
 	structNoFields   = flags.CommandFlag[string]{Name: "no-fields"}
 )
 
-var structEnumOptions = cmdutils.EnumOptions[*codescout.StructNode]{Options: map[string]func(*codescout.StructNode) any{
+var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[string]func(*codescout.StructNode) any{
 	"definition": func(node *codescout.StructNode) any { return node.Code() },
 	"body":       func(node *codescout.StructNode) any { return node.Body() },
 	"signature":  func(node *codescout.StructNode) any { return node.Signature() },
@@ -26,9 +25,15 @@ var structEnumOptions = cmdutils.EnumOptions[*codescout.StructNode]{Options: map
 }}
 
 var structBatchValidator = flags.BatchValidator{
-	EmptyValidators: []flags.FlagValidator{
-		&structName,
-	},
+	EmptyValidators:      []flags.FlagValidator{&structName},
+	StringBoolValidators: []*flags.CommandFlag[string]{&structNoFields},
+}
+
+var structCommandValidation = cmdutils.CobraCommandVlidation[*codescout.StructNode]{
+	Validator:      structBatchValidator,
+	NamedTypesFlag: structFieldTypes,
+	OutputTypeFlag: structOutputType,
+	OutputOptions:  structOptions,
 }
 
 var structCmd = &cobra.Command{
@@ -49,35 +54,26 @@ func init() {
 		&structOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("Part of struct to output, must be one of: %v", structEnumOptions.ToOptionString()),
+		fmt.Sprintf("Part of struct to output, must be one of: %v", structOptions.ToOptionString()),
 	)
 }
 
 func structCmdRun(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
-
-	if cmdutils.CountFlagsSet(cmd) == 0 {
-		return errors.New("at least one flag must be set for the struct command")
-	}
-
-	validationErr := structBatchValidator.Validate(cmd)
+	validationErr := structCommandValidation.CommandValidation(cmd)
 	if validationErr != nil {
 		return validationErr
 	}
 
-	outputErr := structEnumOptions.EnumValidation(cmd, "output", structOutputType.Variable)
-	if outputErr != nil {
-		return outputErr
-	}
-
 	structConfig := codescout.StructConfig{
-		Name: structName.Variable,
+		Name:       structName.Variable,
+		FieldTypes: structCommandValidation.GetNamedTypes(),
+		NoFields:   flags.StringBoolToPointer(structNoFields.Variable),
 	}
 	structure, err := codescout.ScoutStruct(filePath, structConfig)
 	if err != nil {
 		return err
 	}
-	fmt.Println(structure.Comments())
-	fmt.Println(structEnumOptions.GetOutputCallable(structOutputType.Variable)(structure))
+	fmt.Println(structOptions.GetOutputCallable(structOutputType.Variable)(structure))
 	return nil
 }

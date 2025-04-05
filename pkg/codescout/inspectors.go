@@ -63,7 +63,8 @@ type structInspector struct {
 
 func (i structInspector) isNodeMatch(node StructNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	return nameEquals
+	validFields := fullTypesMatch(i.Config.FieldTypes, i.Config.NoFields, node.Fields())
+	return nameEquals && validFields
 }
 
 func (i *structInspector) appendNode(node StructNode) {
@@ -135,7 +136,7 @@ type methodInspector struct {
 func (i methodInspector) isNodeMatch(node MethodNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
 	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullParamsMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps)
+	validParams := fullTypesMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps.Parameters())
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
@@ -224,7 +225,7 @@ type funcInspector struct {
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
 	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullParamsMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps)
+	validParams := fullTypesMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps.Parameters())
 	return nameEquals && validReturns && validParams
 }
 

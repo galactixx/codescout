@@ -1,8 +1,8 @@
 package validation
 
 type TypeValidation struct {
-	TypeMap      map[string]int
-	ParameterMap map[string]string
+	TypeMap       map[string]int
+	NamedTypesMap map[string]string
 
 	CurParamName    string
 	CurParamType    string
@@ -10,7 +10,7 @@ type TypeValidation struct {
 }
 
 func (v TypeValidation) GetParamType(name string) string {
-	return v.ParameterMap[name]
+	return v.NamedTypesMap[name]
 }
 
 func (v *TypeValidation) HasExhausted(paramType string) bool {
@@ -32,7 +32,7 @@ func (v *TypeValidation) SetParamInfo(name string, paramType string) {
 }
 
 func (v *TypeValidation) SetNameInParams(name string) {
-	_, isInParams := v.ParameterMap[name]
+	_, isInParams := v.NamedTypesMap[name]
 	v.CurNameInParams = isInParams
 }
 
@@ -43,7 +43,7 @@ func (v TypeValidation) TypeExclExists() bool {
 
 func (v TypeValidation) TypeExists() bool {
 	if v.CurNameInParams && v.CurParamType != "" {
-		return v.CurParamType == v.ParameterMap[v.CurParamName]
+		return v.CurParamType == v.NamedTypesMap[v.CurParamName]
 	}
 	if v.CurParamName == "" {
 		return v.TypeExclExists()

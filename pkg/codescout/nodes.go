@@ -186,22 +186,6 @@ func (f CallableOps) PrintSignature() {
 	fmt.Println(f.Signature())
 }
 
-func (f CallableOps) parameterTypeMap() map[string]int {
-	var parameterTypes []string
-	for _, parameter := range f.Parameters() {
-		parameterTypes = append(parameterTypes, parameter.Type)
-	}
-	return pkgutils.DefaultTypeMap(parameterTypes)
-}
-
-func (f CallableOps) ParametersMap() map[string]string {
-	parameters := make(map[string]string)
-	for _, parameter := range f.Parameters() {
-		parameters[parameter.Name] = parameter.Type
-	}
-	return parameters
-}
-
 func (f CallableOps) Parameters() []NamedType {
 	return fieldListToNamedTypes(*f.node.Type.Params, f.fset)
 }

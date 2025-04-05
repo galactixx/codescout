@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/galactixx/codescout/internal/cmdutils"
@@ -19,7 +18,7 @@ var (
 	funcNoReturn       = flags.CommandFlag[string]{Name: "no-return"}
 )
 
-var funcEnumOptions = cmdutils.EnumOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) any{
+var funcOptions = cmdutils.OutputOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) any{
 	"definition": func(node *codescout.FuncNode) any { return node.CallableOps.Code() },
 	"body":       func(node *codescout.FuncNode) any { return node.CallableOps.Body() },
 	"signature":  func(node *codescout.FuncNode) any { return node.CallableOps.Signature() },
@@ -34,6 +33,13 @@ var funcBatchValidator = flags.BatchValidator{
 		&funcReturnTypes,
 	},
 	StringBoolValidators: []*flags.CommandFlag[string]{&funcNoParams, &funcNoReturn},
+}
+
+var funcCommandValidation = cmdutils.CobraCommandVlidation[*codescout.FuncNode]{
+	Validator:      funcBatchValidator,
+	NamedTypesFlag: funcParameterTypes,
+	OutputTypeFlag: funcOutputType,
+	OutputOptions:  funcOptions,
 }
 
 var funcCmd = &cobra.Command{
@@ -57,36 +63,20 @@ func init() {
 		&funcOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("Part of function to output, must be one of: %v", funcEnumOptions.ToOptionString()),
+		fmt.Sprintf("Part of function to output, must be one of: %v", funcOptions.ToOptionString()),
 	)
 }
 
 func funcCmdRun(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
-
-	if cmdutils.CountFlagsSet(cmd) == 0 {
-		return errors.New("at least one flag must be set for the func command")
-	}
-
-	validationErr := funcBatchValidator.Validate(cmd)
+	validationErr := funcCommandValidation.CommandValidation(cmd)
 	if validationErr != nil {
 		return validationErr
 	}
 
-	functionTypes := make([]codescout.NamedType, 0, 5)
-	err := cmdutils.ArgsToParams(funcParameterTypes.Variable, &functionTypes)
-	if err != nil {
-		return err
-	}
-
-	outputErr := funcEnumOptions.EnumValidation(cmd, "output", funcOutputType.Variable)
-	if outputErr != nil {
-		return outputErr
-	}
-
 	functionConfig := codescout.FuncConfig{
 		Name:        funcName.Variable,
-		ParamTypes:  functionTypes,
+		ParamTypes:  funcCommandValidation.GetNamedTypes(),
 		ReturnTypes: funcReturnTypes.Variable,
 		NoParams:    flags.StringBoolToPointer(funcNoParams.Variable),
 		NoReturn:    flags.StringBoolToPointer(funcNoReturn.Variable),
@@ -95,6 +85,6 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(funcEnumOptions.GetOutputCallable(funcOutputType.Variable)(function))
+	fmt.Println(funcOptions.GetOutputCallable(funcOutputType.Variable)(function))
 	return nil
 }

@@ -35,6 +35,7 @@ type MethodConfig struct {
 type StructConfig struct {
 	Name       string
 	FieldTypes []NamedType
+	NoFields   *bool
 }
 
 func getFirstOccurrence[T any](preScout preScoutSetup[T], symbol string) (*T, error) {
