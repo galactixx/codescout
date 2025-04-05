@@ -16,14 +16,15 @@ var (
 	funcOutputType     = flags.CommandFlag[string]{Name: "output"}
 	funcNoParams       = flags.CommandFlag[string]{Name: "no-params"}
 	funcNoReturn       = flags.CommandFlag[string]{Name: "no-return"}
+	funcVerbose        = flags.CommandFlag[bool]{Name: "verbose"}
 )
 
-var funcOptions = cmdutils.OutputOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) any{
-	"definition": func(node *codescout.FuncNode) any { return node.CallableOps.Code() },
-	"body":       func(node *codescout.FuncNode) any { return node.CallableOps.Body() },
-	"signature":  func(node *codescout.FuncNode) any { return node.CallableOps.Signature() },
-	"comment":    func(node *codescout.FuncNode) any { return node.CallableOps.Comments() },
-	"return":     func(node *codescout.FuncNode) any { return node.CallableOps.ReturnType() },
+var funcOptions = cmdutils.OutputOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) string{
+	"definition": func(node *codescout.FuncNode) string { return node.CallableOps.Code() },
+	"body":       func(node *codescout.FuncNode) string { return node.CallableOps.Body() },
+	"signature":  func(node *codescout.FuncNode) string { return node.CallableOps.Signature() },
+	"comment":    func(node *codescout.FuncNode) string { return node.CallableOps.Comments() },
+	"return":     func(node *codescout.FuncNode) string { return node.CallableOps.ReturnType() },
 }}
 
 var funcBatchValidator = flags.BatchValidator{
@@ -58,6 +59,7 @@ func init() {
 	flags.StringSliceVarP(funcCmd, &funcReturnTypes, "r", make([]string, 0), "Return types of function")
 	flags.StringVarP(funcCmd, &funcNoParams, "s", "", "If the function has no parameters (true/false)")
 	flags.StringVarP(funcCmd, &funcNoReturn, "u", "", "If the function has no return type (true/false)")
+	flags.BoolVarP(funcCmd, &funcVerbose, "v", false, "Whether to print all occurences or just the first")
 	flags.StringVarP(
 		funcCmd,
 		&funcOutputType,
@@ -81,10 +83,14 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		NoParams:    flags.StringBoolToPointer(funcNoParams.Variable),
 		NoReturn:    flags.StringBoolToPointer(funcNoReturn.Variable),
 	}
-	function, err := codescout.ScoutFunction(filePath, functionConfig)
-	if err != nil {
-		return err
-	}
-	fmt.Println(funcOptions.GetOutputCallable(funcOutputType.Variable)(function))
-	return nil
+	scoutContainer := cmdutils.NewScoutContainer(
+		codescout.ScoutFunction,
+		codescout.ScoutFunctions,
+		filePath,
+		funcOptions,
+		functionConfig,
+		"Function",
+		funcOutputType.Variable,
+	)
+	return scoutContainer.Display(funcVerbose.Variable)
 }

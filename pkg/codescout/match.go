@@ -75,7 +75,7 @@ func fullCalledMatch(methods []string, boolVar *bool, node MethodNode) bool {
 }
 
 type CallableTypes interface {
-	~[]string | ~[]NamedType
+	[]string | []NamedType
 }
 
 func boolMatch[T CallableTypes](boolVar *bool, nodeTypes T) bool {

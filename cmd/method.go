@@ -22,17 +22,18 @@ var (
 	methodNoReturn       = flags.CommandFlag[string]{Name: "no-return"}
 	noFieldsAccessed     = flags.CommandFlag[string]{Name: "no-fields"}
 	noMethodsCalled      = flags.CommandFlag[string]{Name: "no-methods"}
+	methodVerbose        = flags.CommandFlag[bool]{Name: "verbose"}
 )
 
-var methodOptions = cmdutils.OutputOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) any{
-	"definition":       func(node *codescout.MethodNode) any { return node.CallableOps.Code() },
-	"body":             func(node *codescout.MethodNode) any { return node.CallableOps.Body() },
-	"signature":        func(node *codescout.MethodNode) any { return node.CallableOps.Signature() },
-	"comment":          func(node *codescout.MethodNode) any { return node.CallableOps.Comments() },
-	"return":           func(node *codescout.MethodNode) any { return node.CallableOps.ReturnType() },
-	"receiver":         func(node *codescout.MethodNode) any { return node.ReceiverType() },
-	"receiver-fields":  func(node *codescout.MethodNode) any { return node.FieldsAccessed() },
-	"receiver-methods": func(node *codescout.MethodNode) any { return node.MethodsCalled() },
+var methodOptions = cmdutils.OutputOptions[*codescout.MethodNode]{Options: map[string]func(*codescout.MethodNode) string{
+	"definition": func(node *codescout.MethodNode) string { return node.CallableOps.Code() },
+	"body":       func(node *codescout.MethodNode) string { return node.CallableOps.Body() },
+	"signature":  func(node *codescout.MethodNode) string { return node.CallableOps.Signature() },
+	"comment":    func(node *codescout.MethodNode) string { return node.CallableOps.Comments() },
+	"return":     func(node *codescout.MethodNode) string { return node.CallableOps.ReturnType() },
+	"receiver":   func(node *codescout.MethodNode) string { return node.ReceiverType() },
+	// "receiver-fields":  func(node *codescout.MethodNode) string { return node.FieldsAccessed() },
+	// "receiver-methods": func(node *codescout.MethodNode) string { return node.MethodsCalled() },
 }}
 
 var methodBatchValidator = flags.BatchValidator{
@@ -74,14 +75,15 @@ func init() {
 	flags.StringVarP(methodCmd, &methodName, "n", "", "The method name")
 	flags.StringSliceVarP(methodCmd, &methodParameterTypes, "p", make([]string, 0), "Parameter names and types of method")
 	flags.StringSliceVarP(methodCmd, &methodReturnTypes, "r", make([]string, 0), "Return types of method")
-	flags.StringVarP(methodCmd, &methodReceiver, "v", "", "Receiver type of method")
+	flags.StringVarP(methodCmd, &methodReceiver, "m", "", "Receiver type of method")
 	flags.StringVarP(methodCmd, &hasPointerReceiver, "t", "", "Whether method has a pointer receiver (true/false)")
 	flags.StringSliceVarP(methodCmd, &fieldsAccessed, "f", make([]string, 0), "Struct fields accessed")
-	flags.StringSliceVarP(methodCmd, &methodsCalled, "m", make([]string, 0), "Struct methods called")
+	flags.StringSliceVarP(methodCmd, &methodsCalled, "c", make([]string, 0), "Struct methods called")
 	flags.StringVarP(methodCmd, &methodNoParams, "s", "", "If the method has no parameters (true/false)")
 	flags.StringVarP(methodCmd, &methodNoReturn, "u", "", "If the method has no return type (true/false)")
 	flags.StringVarP(methodCmd, &noFieldsAccessed, "d", "", "If the method does not access struct fields (true/false)")
 	flags.StringVarP(methodCmd, &noMethodsCalled, "e", "", "If the method does not call struct methods (true/false)")
+	flags.BoolVarP(methodCmd, &methodVerbose, "v", false, "Whether to print all occurences or just the first")
 	flags.StringVarP(
 		methodCmd,
 		&methodOutputType,
@@ -111,10 +113,14 @@ func methodCmdRun(cmd *cobra.Command, args []string) error {
 		NoFields:     flags.StringBoolToPointer(noFieldsAccessed.Variable),
 		NoMethods:    flags.StringBoolToPointer(noMethodsCalled.Variable),
 	}
-	method, err := codescout.ScoutMethod(filePath, methodConfig)
-	if err != nil {
-		return err
-	}
-	fmt.Println(methodOptions.GetOutputCallable(methodOutputType.Variable)(method))
-	return nil
+	scoutContainer := cmdutils.NewScoutContainer(
+		codescout.ScoutMethod,
+		codescout.ScoutMethods,
+		filePath,
+		methodOptions,
+		methodConfig,
+		"Method",
+		methodOutputType.Variable,
+	)
+	return scoutContainer.Display(methodVerbose.Variable)
 }

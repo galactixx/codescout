@@ -25,8 +25,12 @@ func StringSliceVarP(cmd *cobra.Command, flag *CommandFlag[[]string], s string, 
 	cmd.Flags().StringSliceVarP(&flag.Variable, flag.Name, s, v, u)
 }
 
+func BoolVarP(cmd *cobra.Command, flag *CommandFlag[bool], s string, v bool, u string) {
+	cmd.Flags().BoolVarP(&flag.Variable, flag.Name, s, v, u)
+}
+
 type FlagVariable interface {
-	~string | ~[]string
+	bool | string | []string
 }
 
 type FlagValidator interface {

@@ -149,19 +149,13 @@ func (i methodInspector) isAttrsMatch(node MethodNode) bool {
 	return accessed && called
 }
 
-func (i *methodInspector) appendNode(node MethodNode) {
-	i.Nodes = append(i.Nodes, node)
-}
-
+func (i *methodInspector) appendNode(node MethodNode) { i.Nodes = append(i.Nodes, node) }
 func (i *methodInspector) inspect() {
 	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
-func (i methodInspector) getNodes() []MethodNode {
-	return i.Nodes
-}
-
+func (i methodInspector) getNodes() []MethodNode { return i.Nodes }
 func (i methodInspector) newMethod(name string, node ast.Node, comment string) MethodNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
 	return MethodNode{
@@ -238,10 +232,7 @@ func (i *funcInspector) inspect() {
 	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
-func (i funcInspector) getNodes() []FuncNode {
-	return i.Nodes
-}
-
+func (i funcInspector) getNodes() []FuncNode { return i.Nodes }
 func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
 	return FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode, fset: i.Base.Fset}}

@@ -24,6 +24,7 @@ type NodeInfo interface {
 	Code() string
 	PrintNode()
 	PrintComments()
+	Name() string
 }
 
 type BaseNode struct {
@@ -49,13 +50,10 @@ func (s StructNode) Fields() []NamedType {
 	return fieldListToNamedTypes(*s.node.Fields, s.fset)
 }
 
-func (s StructNode) Code() string {
-	return pkgutils.NodeToCode(s.fset, s.genNode)
-}
-
-func (s StructNode) PrintNode() {
-	fmt.Println(s.Code())
-}
+func (s StructNode) Code() string   { return pkgutils.NodeToCode(s.fset, s.genNode) }
+func (s StructNode) PrintNode()     { fmt.Println(s.Code()) }
+func (s StructNode) PrintComments() { fmt.Println(s.Comments()) }
+func (s StructNode) Name() string   { return s.Node.Name }
 
 func (s StructNode) Body() string {
 	structFields := pkgutils.NodeToCode(s.fset, s.node)
@@ -78,9 +76,7 @@ func (s StructNode) Signature() string {
 	return signature
 }
 
-func (s StructNode) Comments() string {
-	return pkgutils.CommentGroupToString(s.genNode.Doc)
-}
+func (s StructNode) Comments() string { return pkgutils.CommentGroupToString(s.genNode.Doc) }
 
 type MethodNode struct {
 	Node        BaseNode
@@ -90,41 +86,38 @@ type MethodNode struct {
 	methodsCalled  map[string]*int
 }
 
-func (f *MethodNode) addMethodField(field string) {
-	if _, seenField := f.fieldsAccessed[field]; !seenField {
-		f.fieldsAccessed[field] = nil
+func (m *MethodNode) addMethodField(field string) {
+	if _, seenField := m.fieldsAccessed[field]; !seenField {
+		m.fieldsAccessed[field] = nil
 	}
 }
 
-func (f *MethodNode) addMethodCall(method string) {
-	if _, seenMethod := f.methodsCalled[method]; !seenMethod {
-		f.methodsCalled[method] = nil
+func (m *MethodNode) addMethodCall(method string) {
+	if _, seenMethod := m.methodsCalled[method]; !seenMethod {
+		m.methodsCalled[method] = nil
 	}
 }
 
-func (f MethodNode) HasPointerReceiver() bool {
-	_, isPointer := f.CallableOps.node.Recv.List[0].Type.(*ast.StarExpr)
+func (m MethodNode) HasPointerReceiver() bool {
+	_, isPointer := m.CallableOps.node.Recv.List[0].Type.(*ast.StarExpr)
 	return isPointer
 }
 
-func (f MethodNode) FieldsAccessed() []string {
-	return pkgutils.FromEmptyMapKeysToSlice(f.fieldsAccessed)
+func (m MethodNode) FieldsAccessed() []string {
+	return pkgutils.FromEmptyMapKeysToSlice(m.fieldsAccessed)
 }
 
-func (f MethodNode) MethodsCalled() []string {
-	return pkgutils.FromEmptyMapKeysToSlice(f.methodsCalled)
+func (m MethodNode) MethodsCalled() []string {
+	return pkgutils.FromEmptyMapKeysToSlice(m.methodsCalled)
 }
 
-func (f MethodNode) PrintNode() {
-	fmt.Println(f.CallableOps.Code())
-}
+func (m MethodNode) Code() string   { return m.CallableOps.Code() }
+func (m MethodNode) PrintNode()     { fmt.Println(m.Code()) }
+func (m MethodNode) PrintComments() { fmt.Println(m.CallableOps.Comments()) }
+func (m MethodNode) Name() string   { return m.Node.Name }
 
-func (f MethodNode) PrintComments() {
-	fmt.Println(f.CallableOps.Comments())
-}
-
-func (f MethodNode) ReceiverType() string {
-	structType := f.CallableOps.node.Recv.List[0].Type
+func (m MethodNode) ReceiverType() string {
+	structType := m.CallableOps.node.Recv.List[0].Type
 	switch expr := structType.(type) {
 	case *ast.Ident:
 		// -> m MyStruct
@@ -148,9 +141,9 @@ func (f MethodNode) ReceiverType() string {
 	}
 }
 
-func (f MethodNode) ReceiverName() string {
-	if len(f.CallableOps.node.Recv.List[0].Names) > 0 {
-		return f.CallableOps.node.Recv.List[0].Names[0].Name
+func (m MethodNode) ReceiverName() string {
+	if len(m.CallableOps.node.Recv.List[0].Names) > 0 {
+		return m.CallableOps.node.Recv.List[0].Names[0].Name
 	}
 	return ""
 }
@@ -160,13 +153,10 @@ type FuncNode struct {
 	CallableOps CallableOps
 }
 
-func (f FuncNode) PrintNode() {
-	fmt.Println(f.CallableOps.Code())
-}
-
-func (f FuncNode) PrintComments() {
-	fmt.Println(f.CallableOps.Comments())
-}
+func (f FuncNode) Code() string   { return f.CallableOps.Code() }
+func (f FuncNode) PrintNode()     { fmt.Println(f.Code()) }
+func (f FuncNode) PrintComments() { fmt.Println(f.CallableOps.Comments()) }
+func (f FuncNode) Name() string   { return f.Node.Name }
 
 type CallableOps struct {
 	node *ast.FuncDecl
@@ -174,55 +164,42 @@ type CallableOps struct {
 	fset *token.FileSet
 }
 
-func (f CallableOps) PrintReturnType() {
-	fmt.Println(f.ReturnType())
+func (c CallableOps) PrintReturnType() { fmt.Println(c.ReturnType()) }
+func (c CallableOps) PrintBody()       { fmt.Println(c.Body()) }
+func (c CallableOps) PrintSignature()  { fmt.Println(c.Signature()) }
+
+func (c CallableOps) Parameters() []NamedType {
+	return fieldListToNamedTypes(*c.node.Type.Params, c.fset)
 }
 
-func (f CallableOps) PrintBody() {
-	fmt.Println(f.Body())
-}
+func (c CallableOps) Comments() string { return pkgutils.CommentGroupToString(c.node.Doc) }
+func (c CallableOps) Body() string     { return pkgutils.NodeToCode(c.fset, c.node.Body) }
 
-func (f CallableOps) PrintSignature() {
-	fmt.Println(f.Signature())
-}
-
-func (f CallableOps) Parameters() []NamedType {
-	return fieldListToNamedTypes(*f.node.Type.Params, f.fset)
-}
-
-func (f CallableOps) Comments() string {
-	return pkgutils.CommentGroupToString(f.node.Doc)
-}
-
-func (f CallableOps) Body() string {
-	return pkgutils.NodeToCode(f.fset, f.node.Body)
-}
-
-func (f CallableOps) Code() string {
-	nodeOriginalDoc := f.node.Doc
-	f.node.Doc = nil
-	codeString := pkgutils.NodeToCode(f.fset, f.node)
-	f.node.Doc = nodeOriginalDoc
-	if f.node.Doc == nil {
+func (c CallableOps) Code() string {
+	nodeOriginalDoc := c.node.Doc
+	c.node.Doc = nil
+	codeString := pkgutils.NodeToCode(c.fset, c.node)
+	c.node.Doc = nodeOriginalDoc
+	if c.node.Doc == nil {
 		return codeString
 	} else {
-		return f.Comments() + "\n" + codeString
+		return c.Comments() + "\n" + codeString
 	}
 }
 
-func (f CallableOps) Signature() string {
-	return pkgutils.NodeToCode(f.fset, &ast.FuncDecl{
-		Name: f.node.Name,
-		Type: f.node.Type,
+func (c CallableOps) Signature() string {
+	return pkgutils.NodeToCode(c.fset, &ast.FuncDecl{
+		Name: c.node.Name,
+		Type: c.node.Type,
 	})
 }
 
-func (f CallableOps) returnTypesMap() map[string]int {
-	return pkgutils.DefaultTypeMap(f.ReturnTypes())
+func (c CallableOps) returnTypesMap() map[string]int {
+	return pkgutils.DefaultTypeMap(c.ReturnTypes())
 }
 
-func (f CallableOps) ReturnType() string {
-	nodeReturnTypes := f.ReturnTypes()
+func (c CallableOps) ReturnType() string {
+	nodeReturnTypes := c.ReturnTypes()
 	switch len(nodeReturnTypes) {
 	case 0:
 		return ""
@@ -233,11 +210,11 @@ func (f CallableOps) ReturnType() string {
 	}
 }
 
-func (f CallableOps) ReturnTypes() []string {
+func (c CallableOps) ReturnTypes() []string {
 	returnTypes := make([]string, 0, 5)
-	if f.node.Type.Results != nil {
-		for _, returnType := range f.node.Type.Results.List {
-			returnTypes = append(returnTypes, pkgutils.NodeToCode(f.fset, returnType.Type))
+	if c.node.Type.Results != nil {
+		for _, returnType := range c.node.Type.Results.List {
+			returnTypes = append(returnTypes, pkgutils.NodeToCode(c.fset, returnType.Type))
 		}
 	}
 	return returnTypes

@@ -14,14 +14,15 @@ var (
 	structOutputType = flags.CommandFlag[string]{Name: "output"}
 	structFieldTypes = flags.CommandFlag[[]string]{Name: "fields"}
 	structNoFields   = flags.CommandFlag[string]{Name: "no-fields"}
+	structVerbose    = flags.CommandFlag[bool]{Name: "verbose"}
 )
 
-var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[string]func(*codescout.StructNode) any{
-	"definition": func(node *codescout.StructNode) any { return node.Code() },
-	"body":       func(node *codescout.StructNode) any { return node.Body() },
-	"signature":  func(node *codescout.StructNode) any { return node.Signature() },
-	"comment":    func(node *codescout.StructNode) any { return node.Comments() },
-	"methods":    func(node *codescout.StructNode) any { return "" },
+var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[string]func(*codescout.StructNode) string{
+	"definition": func(node *codescout.StructNode) string { return node.Code() },
+	"body":       func(node *codescout.StructNode) string { return node.Body() },
+	"signature":  func(node *codescout.StructNode) string { return node.Signature() },
+	"comment":    func(node *codescout.StructNode) string { return node.Comments() },
+	"methods":    func(node *codescout.StructNode) string { return "" },
 }}
 
 var structBatchValidator = flags.BatchValidator{
@@ -49,6 +50,7 @@ func init() {
 	flags.StringVarP(structCmd, &structName, "n", "", "The struct name")
 	flags.StringSliceVarP(structCmd, &structFieldTypes, "f", make([]string, 0), "Field names and types of struct")
 	flags.StringVarP(structCmd, &structNoFields, "s", "", "If the struct has no fields (true/false)")
+	flags.BoolVarP(structCmd, &structVerbose, "v", false, "Whether to print all occurences or just the first")
 	flags.StringVarP(
 		structCmd,
 		&structOutputType,
@@ -70,10 +72,14 @@ func structCmdRun(cmd *cobra.Command, args []string) error {
 		FieldTypes: structCommandValidation.GetNamedTypes(),
 		NoFields:   flags.StringBoolToPointer(structNoFields.Variable),
 	}
-	structure, err := codescout.ScoutStruct(filePath, structConfig)
-	if err != nil {
-		return err
-	}
-	fmt.Println(structOptions.GetOutputCallable(structOutputType.Variable)(structure))
-	return nil
+	scoutContainer := cmdutils.NewScoutContainer(
+		codescout.ScoutStruct,
+		codescout.ScoutStructs,
+		filePath,
+		structOptions,
+		structConfig,
+		"Struct",
+		structOutputType.Variable,
+	)
+	return scoutContainer.Display(structVerbose.Variable)
 }

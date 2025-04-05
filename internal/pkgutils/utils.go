@@ -9,6 +9,7 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"strings"
 )
 
 func FromEmptyMapKeysToSlice(someMap map[string]*int) []string {
@@ -45,9 +46,10 @@ func ExprToString(expr ast.Expr) string {
 }
 
 func NodeToCode(fset *token.FileSet, node any) string {
-	var buf bytes.Buffer
-	printer.Fprint(&buf, fset, node)
-	return buf.String()
+	var builder strings.Builder
+	cfg := &printer.Config{Mode: printer.UseSpaces, Tabwidth: 4}
+	_ = cfg.Fprint(&builder, fset, node)
+	return builder.String()
 }
 
 func ParseFile(src string, fset *token.FileSet) *ast.File {

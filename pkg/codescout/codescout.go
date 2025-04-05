@@ -58,6 +58,7 @@ func getAllOccurrences[T any](preScout preScoutSetup[T]) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
+	inspector.inspect()
 	return inspector.getNodes(), nil
 }
 
