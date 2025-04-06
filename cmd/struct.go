@@ -15,6 +15,7 @@ var (
 	structFieldTypes = flags.CommandFlag[[]string]{Name: "fields"}
 	structNoFields   = flags.CommandFlag[string]{Name: "no-fields"}
 	structVerbose    = flags.CommandFlag[bool]{Name: "verbose"}
+	structExact      = flags.CommandFlag[bool]{Name: "exact"}
 )
 
 var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[string]func(*codescout.StructNode) string{
@@ -22,7 +23,6 @@ var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[s
 	"body":       func(node *codescout.StructNode) string { return node.Body() },
 	"signature":  func(node *codescout.StructNode) string { return node.Signature() },
 	"comment":    func(node *codescout.StructNode) string { return node.Comments() },
-	"methods":    func(node *codescout.StructNode) string { return "" },
 }}
 
 var structBatchValidator = flags.BatchValidator{
@@ -32,8 +32,8 @@ var structBatchValidator = flags.BatchValidator{
 
 var structCommandValidation = cmdutils.CobraCommandVlidation[*codescout.StructNode]{
 	Validator:      structBatchValidator,
-	NamedTypesFlag: structFieldTypes,
-	OutputTypeFlag: structOutputType,
+	NamedTypesFlag: &structFieldTypes,
+	OutputTypeFlag: &structOutputType,
 	OutputOptions:  structOptions,
 }
 
@@ -47,16 +47,17 @@ var structCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(structCmd)
 
-	flags.StringVarP(structCmd, &structName, "n", "", "The struct name")
-	flags.StringSliceVarP(structCmd, &structFieldTypes, "f", make([]string, 0), "Field names and types of struct")
-	flags.StringVarP(structCmd, &structNoFields, "s", "", "If the struct has no fields (true/false)")
-	flags.BoolVarP(structCmd, &structVerbose, "v", false, "Whether to print all occurences or just the first")
+	flags.StringVarP(structCmd, &structName, "n", "", "the struct name")
+	flags.StringSliceVarP(structCmd, &structFieldTypes, "f", make([]string, 0), "field names and types of struct")
+	flags.StringVarP(structCmd, &structNoFields, "s", "", "if the struct has no fields (true/false)")
+	flags.BoolVarP(structCmd, &structVerbose, "v", false, "whether to print all occurrences or just the first")
+	flags.BoolVarP(structCmd, &structExact, "x", false, "if an exact match should occur with slice flags")
 	flags.StringVarP(
 		structCmd,
 		&structOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("Part of struct to output, must be one of: %v", structOptions.ToOptionString()),
+		fmt.Sprintf("part of struct to output, must be one of: %v", structOptions.ToOptionString()),
 	)
 }
 
@@ -71,6 +72,7 @@ func structCmdRun(cmd *cobra.Command, args []string) error {
 		Name:       structName.Variable,
 		FieldTypes: structCommandValidation.GetNamedTypes(),
 		NoFields:   flags.StringBoolToPointer(structNoFields.Variable),
+		Exact:      structExact.Variable,
 	}
 	scoutContainer := cmdutils.NewScoutContainer(
 		codescout.ScoutStruct,

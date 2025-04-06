@@ -17,6 +17,7 @@ var (
 	funcNoParams       = flags.CommandFlag[string]{Name: "no-params"}
 	funcNoReturn       = flags.CommandFlag[string]{Name: "no-return"}
 	funcVerbose        = flags.CommandFlag[bool]{Name: "verbose"}
+	funcExact          = flags.CommandFlag[bool]{Name: "exact"}
 )
 
 var funcOptions = cmdutils.OutputOptions[*codescout.FuncNode]{Options: map[string]func(*codescout.FuncNode) string{
@@ -38,8 +39,8 @@ var funcBatchValidator = flags.BatchValidator{
 
 var funcCommandValidation = cmdutils.CobraCommandVlidation[*codescout.FuncNode]{
 	Validator:      funcBatchValidator,
-	NamedTypesFlag: funcParameterTypes,
-	OutputTypeFlag: funcOutputType,
+	NamedTypesFlag: &funcParameterTypes,
+	OutputTypeFlag: &funcOutputType,
 	OutputOptions:  funcOptions,
 }
 
@@ -54,18 +55,19 @@ var funcCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(funcCmd)
 
-	flags.StringVarP(funcCmd, &funcName, "n", "", "The function name")
-	flags.StringSliceVarP(funcCmd, &funcParameterTypes, "p", make([]string, 0), "Parameter names and types of function")
-	flags.StringSliceVarP(funcCmd, &funcReturnTypes, "r", make([]string, 0), "Return types of function")
-	flags.StringVarP(funcCmd, &funcNoParams, "s", "", "If the function has no parameters (true/false)")
-	flags.StringVarP(funcCmd, &funcNoReturn, "u", "", "If the function has no return type (true/false)")
-	flags.BoolVarP(funcCmd, &funcVerbose, "v", false, "Whether to print all occurences or just the first")
+	flags.StringVarP(funcCmd, &funcName, "n", "", "the function name")
+	flags.StringSliceVarP(funcCmd, &funcParameterTypes, "p", make([]string, 0), "parameter names and types of function")
+	flags.StringSliceVarP(funcCmd, &funcReturnTypes, "r", make([]string, 0), "return types of function")
+	flags.StringVarP(funcCmd, &funcNoParams, "s", "", "if the function has no parameters (true/false)")
+	flags.StringVarP(funcCmd, &funcNoReturn, "u", "", "if the function has no return type (true/false)")
+	flags.BoolVarP(funcCmd, &funcVerbose, "v", false, "whether to print all occurrences or just the first")
+	flags.BoolVarP(funcCmd, &funcExact, "x", false, "if an exact match should occur with slice flags")
 	flags.StringVarP(
 		funcCmd,
 		&funcOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("Part of function to output, must be one of: %v", funcOptions.ToOptionString()),
+		fmt.Sprintf("part of function to output, must be one of: %v", funcOptions.ToOptionString()),
 	)
 }
 
@@ -82,6 +84,7 @@ func funcCmdRun(cmd *cobra.Command, args []string) error {
 		ReturnTypes: funcReturnTypes.Variable,
 		NoParams:    flags.StringBoolToPointer(funcNoParams.Variable),
 		NoReturn:    flags.StringBoolToPointer(funcNoReturn.Variable),
+		Exact:       funcExact.Variable,
 	}
 	scoutContainer := cmdutils.NewScoutContainer(
 		codescout.ScoutFunction,

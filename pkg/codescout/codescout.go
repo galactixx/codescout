@@ -16,6 +16,7 @@ type FuncConfig struct {
 	ReturnTypes []string
 	NoParams    *bool
 	NoReturn    *bool
+	Exact       bool
 }
 
 type MethodConfig struct {
@@ -30,12 +31,14 @@ type MethodConfig struct {
 	NoReturn     *bool
 	NoFields     *bool
 	NoMethods    *bool
+	Exact        bool
 }
 
 type StructConfig struct {
 	Name       string
 	FieldTypes []NamedType
 	NoFields   *bool
+	Exact      bool
 }
 
 func getFirstOccurrence[T any](preScout preScoutSetup[T], symbol string) (*T, error) {

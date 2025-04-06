@@ -104,6 +104,20 @@ func (s structScoutSetup) initializeInspect() (inspector[StructNode], error) {
 		return nil, fileExistsErr
 	}
 
+	batchValidation := validation.BatchConfigValidation{
+		SliceValidators: []validation.SliceValidator{
+			validation.SlicePairToValidate[NamedType]{
+				Slice: validation.Arg("FieldTypes", s.Config.FieldTypes),
+				Bool:  validation.Arg("NoFields", s.Config.NoFields),
+			},
+		},
+	}
+
+	batchErr := batchValidation.Validate()
+	if batchErr != nil {
+		return nil, batchErr
+	}
+
 	inspector := structInspector{
 		Nodes:  map[string]*StructNode{},
 		Config: s.Config,

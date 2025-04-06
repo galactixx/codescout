@@ -21,7 +21,8 @@ import (
 
 var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-func stripANSI(input string) string { return ansiRegexp.ReplaceAllString(input, "") }
+func JoinAttrs(attrs []string) string { return fmt.Sprintf("[ %v ]", strings.Join(attrs, ",")) }
+func stripANSI(input string) string   { return ansiRegexp.ReplaceAllString(input, "") }
 
 type OutputOptions[T any] struct {
 	Options map[string]func(T) string
@@ -84,8 +85,8 @@ func ArgsToNamedTypes(argTypes []string, parameterTypes *[]codescout.NamedType) 
 
 type CobraCommandVlidation[T any] struct {
 	Validator      flags.BatchValidator
-	NamedTypesFlag flags.CommandFlag[[]string]
-	OutputTypeFlag flags.CommandFlag[string]
+	NamedTypesFlag *flags.CommandFlag[[]string]
+	OutputTypeFlag *flags.CommandFlag[string]
 	OutputOptions  OutputOptions[T]
 
 	namedTypes []codescout.NamedType
@@ -117,7 +118,7 @@ func (v *CobraCommandVlidation[T]) CommandValidation(cmd *cobra.Command) error {
 	}
 	v.namedTypes = namedTypes
 
-	outputErr := v.OutputOptions.Validation(cmd, v.OutputTypeFlag)
+	outputErr := v.OutputOptions.Validation(cmd, *v.OutputTypeFlag)
 	if outputErr != nil {
 		return outputErr
 	}
