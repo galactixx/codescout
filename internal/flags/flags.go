@@ -34,8 +34,8 @@ type FlagVariable interface {
 }
 
 type FlagValidator interface {
-	EmptyValidator(command *cobra.Command) bool
-	IsEmptyMessage() error
+	emptyValidator(command *cobra.Command) bool
+	isEmptyMessage() error
 }
 
 type CommandFlag[T FlagVariable] struct {
@@ -43,7 +43,7 @@ type CommandFlag[T FlagVariable] struct {
 	Variable T
 }
 
-func (v CommandFlag[T]) EmptyValidator(command *cobra.Command) bool {
+func (v CommandFlag[T]) emptyValidator(command *cobra.Command) bool {
 	reflected := reflect.ValueOf(v.Variable)
 	var varIsValid bool
 	if reflected.Kind() == reflect.String {
@@ -56,11 +56,11 @@ func (v CommandFlag[T]) EmptyValidator(command *cobra.Command) bool {
 	return command.Flags().Changed(v.Name) && varIsValid
 }
 
-func (v CommandFlag[T]) IsEmptyMessage() error {
+func (v CommandFlag[T]) isEmptyMessage() error {
 	return fmt.Errorf("if name %v is specified it must not be empty", v.Name)
 }
 
-func (v CommandFlag[T]) StringBoolMessage() error {
+func (v CommandFlag[T]) stringBoolMessage() error {
 	return fmt.Errorf("if %v flag is specified it must be: true or false", v.Name)
 }
 
@@ -69,32 +69,32 @@ type BatchValidator struct {
 	StringBoolValidators []*CommandFlag[string]
 }
 
-func (v BatchValidator) BatchEmptyValidate(cmd *cobra.Command) error {
+func (v BatchValidator) batchEmptyValidate(cmd *cobra.Command) error {
 	for _, cmdFlag := range v.EmptyValidators {
-		if validatorErr := cmdFlag.EmptyValidator(cmd); validatorErr {
-			return cmdFlag.IsEmptyMessage()
+		if validatorErr := cmdFlag.emptyValidator(cmd); validatorErr {
+			return cmdFlag.isEmptyMessage()
 		}
 	}
 	return nil
 }
 
-func (v BatchValidator) BatchStringBoolValidator(cmd *cobra.Command) error {
+func (v BatchValidator) batchStringBoolValidator(cmd *cobra.Command) error {
 	for _, cmdFlag := range v.StringBoolValidators {
 		_, ok := map[string]*int{"true": nil, "false": nil}[cmdFlag.Variable]
 		if cmd.Flags().Changed(cmdFlag.Name) && !ok {
-			return cmdFlag.StringBoolMessage()
+			return cmdFlag.stringBoolMessage()
 		}
 	}
 	return nil
 }
 
 func (v BatchValidator) Validate(cmd *cobra.Command) error {
-	stringBoolErr := v.BatchStringBoolValidator(cmd)
+	stringBoolErr := v.batchStringBoolValidator(cmd)
 	if stringBoolErr != nil {
 		return stringBoolErr
 	}
 
-	emptyErr := v.BatchEmptyValidate(cmd)
+	emptyErr := v.batchEmptyValidate(cmd)
 	if emptyErr != nil {
 		return emptyErr
 	}

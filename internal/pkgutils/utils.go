@@ -12,12 +12,9 @@ import (
 	"strings"
 )
 
-func checkFirstRecvItem(recvList []*ast.Field) bool {
-	return recvList[0] == nil || recvList[0].Type == nil
-}
 func MethodWithoutRecvList(funcDecl *ast.FuncDecl) bool { return len(funcDecl.Recv.List) == 0 }
 func MethodWithoutReceiver(funcDecl *ast.FuncDecl) bool {
-	return MethodWithoutRecvList(funcDecl) || checkFirstRecvItem(funcDecl.Recv.List)
+	return MethodWithoutRecvList(funcDecl) || funcDecl.Recv.List[0].Type == nil
 }
 
 func FromEmptyMapKeysToSlice(someMap map[string]*int) []string {
@@ -36,6 +33,14 @@ func DefaultTypeMap(nodeTypes []string) map[string]int {
 			nodeTypeMapping[nodeType] = 0
 		}
 		nodeTypeMapping[nodeType] += 1
+	}
+	return nodeTypeMapping
+}
+
+func DefaultTypeNilMap(nodeTypes []string) map[string]*int {
+	nodeTypeMapping := make(map[string]*int)
+	for _, nodeType := range nodeTypes {
+		nodeTypeMapping[nodeType] = nil
 	}
 	return nodeTypeMapping
 }
@@ -84,9 +89,7 @@ func CommentGroupToString(comment *ast.CommentGroup) string {
 	}
 	var buf bytes.Buffer
 	for _, comment := range comment.List {
-		if comment != nil {
-			buf.WriteString(comment.Text)
-		}
+		buf.WriteString(comment.Text)
 	}
 	return buf.String()
 }

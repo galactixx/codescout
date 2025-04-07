@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -28,7 +27,7 @@ type OutputOptions[T any] struct {
 	Options map[string]func(T) string
 }
 
-func (o OutputOptions[T]) Validation(cmd *cobra.Command, flag flags.CommandFlag[string]) error {
+func (o OutputOptions[T]) validation(cmd *cobra.Command, flag flags.CommandFlag[string]) error {
 	_, outputValid := o.Options[flag.Variable]
 	if cmd.Flags().Changed("output") && !outputValid {
 		return fmt.Errorf("%v flag must be one of: %v", flag.Name, o.ToOptionString())
@@ -44,7 +43,7 @@ func (o OutputOptions[T]) ToOptionString() string {
 	return strings.Join(optionsSlice, ", ")
 }
 
-func (o OutputOptions[T]) GetOutputCallable(option string) func(T) string {
+func (o OutputOptions[T]) getOutputCallable(option string) func(T) string {
 	return o.Options[option]
 }
 
@@ -56,15 +55,7 @@ func CountFlagsSet(cmd *cobra.Command) int {
 	return count
 }
 
-func FromStringToBool(stringBool string) *bool {
-	newBool, err := strconv.ParseBool(stringBool)
-	if err != nil {
-		return nil
-	}
-	return &newBool
-}
-
-func ArgsToNamedTypes(argTypes []string, parameterTypes *[]codescout.NamedType) error {
+func argsToNamedTypes(argTypes []string, parameterTypes *[]codescout.NamedType) error {
 	for _, parameter := range argTypes {
 		if strings.Count(parameter, ":") != 1 {
 			return errors.New("there must be only one colon separating out the name and type")
@@ -112,13 +103,13 @@ func (v *CobraCommandVlidation[T]) CommandValidation(cmd *cobra.Command) error {
 	}
 
 	namedTypes := make([]codescout.NamedType, 0, 5)
-	err := ArgsToNamedTypes(v.NamedTypesFlag.Variable, &namedTypes)
+	err := argsToNamedTypes(v.NamedTypesFlag.Variable, &namedTypes)
 	if err != nil {
 		return err
 	}
 	v.namedTypes = namedTypes
 
-	outputErr := v.OutputOptions.Validation(cmd, *v.OutputTypeFlag)
+	outputErr := v.OutputOptions.validation(cmd, *v.OutputTypeFlag)
 	if outputErr != nil {
 		return outputErr
 	}
@@ -179,7 +170,7 @@ func (c ScoutContainer[T, C]) Display(verbose bool) error {
 			c.printOutput(
 				name,
 				idx == 0,
-				c.Options.GetOutputCallable(c.OutputType)(&occurrence),
+				c.Options.getOutputCallable(c.OutputType)(&occurrence),
 			)
 		}
 	} else {
@@ -191,7 +182,7 @@ func (c ScoutContainer[T, C]) Display(verbose bool) error {
 		c.printOutput(
 			name,
 			true,
-			c.Options.GetOutputCallable(c.OutputType)(occurrence),
+			c.Options.getOutputCallable(c.OutputType)(occurrence),
 		)
 	}
 	return nil

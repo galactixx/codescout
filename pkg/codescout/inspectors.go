@@ -63,8 +63,8 @@ type structInspector struct {
 
 func (i structInspector) isNodeMatch(node StructNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	validFields := fullTypesMatch(i.Config.FieldTypes, i.Config.NoFields, node.Fields())
-	return nameEquals && validFields
+	matchFields := astNodeSliceMatch(i.Config.FieldTypes, node.Fields(), i.Config.Exact, i.Config.NoFields, namedTypesMatch)
+	return nameEquals && matchFields.validate()
 }
 
 func (i *structInspector) appendNode(node StructNode) {
@@ -135,18 +135,18 @@ type methodInspector struct {
 
 func (i methodInspector) isNodeMatch(node MethodNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullTypesMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps.Parameters())
+	matchReturn := astNodeSliceMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
+	matchParams := astNodeSliceMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
-	return nameEquals && validReturns && validParams && validReceiver && validPtr
+	return nameEquals && matchReturn.validate() && matchParams.validate() && validReceiver && validPtr
 }
 
 func (i methodInspector) isAttrsMatch(node MethodNode) bool {
-	accessed := fullAccessedMatch(i.Config.Fields, i.Config.NoFields, node)
-	called := fullCalledMatch(i.Config.Methods, i.Config.NoMethods, node)
-	return accessed && called
+	matchAccessed := astNodeSliceMatch(i.Config.Fields, node.FieldsAccessed(), i.Config.Exact, i.Config.NoFields, accessedMatch)
+	matchCalled := astNodeSliceMatch(i.Config.Methods, node.MethodsCalled(), i.Config.Exact, i.Config.NoMethods, accessedMatch)
+	return matchAccessed.validate() && matchCalled.validate()
 }
 
 func (i *methodInspector) appendNode(node MethodNode) { i.Nodes = append(i.Nodes, node) }
@@ -218,9 +218,9 @@ type funcInspector struct {
 
 func (i funcInspector) isNodeMatch(node FuncNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	validReturns := fullReturnMatch(i.Config.ReturnTypes, i.Config.NoReturn, node.CallableOps)
-	validParams := fullTypesMatch(i.Config.ParamTypes, i.Config.NoParams, node.CallableOps.Parameters())
-	return nameEquals && validReturns && validParams
+	matchReturn := astNodeSliceMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
+	matchParams := astNodeSliceMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
+	return nameEquals && matchReturn.validate() && matchParams.validate()
 }
 
 func (i *funcInspector) appendNode(node FuncNode) {

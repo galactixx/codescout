@@ -16,13 +16,9 @@ func fieldListToNamedTypes(fields *ast.FieldList, fset *token.FileSet) []NamedTy
 	}
 
 	for _, field := range fields.List {
-		if field != nil {
-			for _, name := range field.Names {
-				if name != nil {
-					named := NamedType{Name: name.Name, Type: pkgutils.NodeToCode(fset, field.Type)}
-					fieldList = append(fieldList, named)
-				}
-			}
+		for _, name := range field.Names {
+			named := NamedType{Name: name.Name, Type: pkgutils.NodeToCode(fset, field.Type)}
+			fieldList = append(fieldList, named)
 		}
 	}
 	return fieldList
@@ -76,12 +72,8 @@ func (s StructNode) Signature() string {
 
 	var params []string
 	for _, field := range s.spec.TypeParams.List {
-		if field != nil {
-			for _, name := range field.Names {
-				if name != nil {
-					params = append(params, name.Name)
-				}
-			}
+		for _, name := range field.Names {
+			params = append(params, name.Name)
 		}
 	}
 	signature += "[" + strings.Join(params, ", ") + "]"
@@ -164,7 +156,7 @@ func (m MethodNode) ReceiverName() string {
 	}
 
 	receiverName := m.CallableOps.node.Recv.List[0]
-	if receiverName != nil && len(receiverName.Names) > 0 && receiverName.Names[0] != nil {
+	if len(receiverName.Names) > 0 && receiverName.Names[0] != nil {
 		return receiverName.Names[0].Name
 	}
 	return ""
@@ -218,10 +210,6 @@ func (c CallableOps) Signature() string {
 	})
 }
 
-func (c CallableOps) returnTypesMap() map[string]int {
-	return pkgutils.DefaultTypeMap(c.ReturnTypes())
-}
-
 func (c CallableOps) ReturnType() string {
 	nodeReturnTypes := c.ReturnTypes()
 	switch len(nodeReturnTypes) {
@@ -238,7 +226,7 @@ func (c CallableOps) ReturnTypes() []string {
 	returnTypes := make([]string, 0, 5)
 	if c.node.Type != nil && c.node.Type.Results != nil {
 		for _, returnType := range c.node.Type.Results.List {
-			if returnType != nil && returnType.Type != nil {
+			if returnType.Type != nil {
 				returnTypes = append(returnTypes, pkgutils.NodeToCode(c.fset, returnType.Type))
 			}
 		}

@@ -12,11 +12,11 @@ func Arg[T any](name string, variable T) Argument[T] {
 }
 
 type SliceValidator interface {
-	TrueMessage() error
-	FalseMessage() error
-	BoolNotNil() bool
-	TrueValidate() bool
-	FalseValidate() bool
+	trueMessage() error
+	falseMessage() error
+	boolNotNil() bool
+	trueValidate() bool
+	falseValidate() bool
 }
 
 type SlicePairToValidate[T any] struct {
@@ -24,23 +24,23 @@ type SlicePairToValidate[T any] struct {
 	Bool  Argument[*bool]
 }
 
-func (p SlicePairToValidate[T]) TrueMessage() error {
+func (p SlicePairToValidate[T]) trueMessage() error {
 	return fmt.Errorf("%v cannot be specified if %v is set to true", p.Slice.Name, p.Bool.Name)
 }
 
-func (p SlicePairToValidate[T]) FalseMessage() error {
+func (p SlicePairToValidate[T]) falseMessage() error {
 	return fmt.Errorf("no need to specify %v if %v is set to false", p.Slice.Name, p.Bool.Name)
 }
 
-func (p SlicePairToValidate[T]) BoolNotNil() bool {
+func (p SlicePairToValidate[T]) boolNotNil() bool {
 	return p.Bool.Variable != nil
 }
 
-func (p SlicePairToValidate[T]) TrueValidate() bool {
+func (p SlicePairToValidate[T]) trueValidate() bool {
 	return len(p.Slice.Variable) > 0 && *p.Bool.Variable
 }
 
-func (p SlicePairToValidate[T]) FalseValidate() bool {
+func (p SlicePairToValidate[T]) falseValidate() bool {
 	return len(p.Slice.Variable) > 0 && !*p.Bool.Variable
 }
 
@@ -50,13 +50,13 @@ type BatchConfigValidation struct {
 
 func (v BatchConfigValidation) Validate() error {
 	for _, validator := range v.SliceValidators {
-		if validator.BoolNotNil() {
-			if validator.TrueValidate() {
-				return validator.TrueMessage()
+		if validator.boolNotNil() {
+			if validator.trueValidate() {
+				return validator.trueMessage()
 			}
 
-			if validator.FalseValidate() {
-				return validator.FalseMessage()
+			if validator.falseValidate() {
+				return validator.falseMessage()
 			}
 		}
 	}
