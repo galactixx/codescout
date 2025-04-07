@@ -9,12 +9,20 @@ import (
 	"github.com/galactixx/codescout/internal/pkgutils"
 )
 
-func fieldListToNamedTypes(fields ast.FieldList, fset *token.FileSet) []NamedType {
-	fieldList := make([]NamedType, 0, len(fields.List))
+func fieldListToNamedTypes(fields *ast.FieldList, fset *token.FileSet) []NamedType {
+	fieldList := make([]NamedType, 0)
+	if fields == nil {
+		return fieldList
+	}
+
 	for _, field := range fields.List {
-		for _, name := range field.Names {
-			named := NamedType{Name: name.Name, Type: pkgutils.NodeToCode(fset, field.Type)}
-			fieldList = append(fieldList, named)
+		if field != nil {
+			for _, name := range field.Names {
+				if name != nil {
+					named := NamedType{Name: name.Name, Type: pkgutils.NodeToCode(fset, field.Type)}
+					fieldList = append(fieldList, named)
+				}
+			}
 		}
 	}
 	return fieldList
@@ -46,14 +54,12 @@ type StructNode struct {
 	fset    *token.FileSet
 }
 
-func (s StructNode) Fields() []NamedType {
-	return fieldListToNamedTypes(*s.node.Fields, s.fset)
-}
-
-func (s StructNode) Code() string   { return pkgutils.NodeToCode(s.fset, s.genNode) }
-func (s StructNode) PrintNode()     { fmt.Println(s.Code()) }
-func (s StructNode) PrintComments() { fmt.Println(s.Comments()) }
-func (s StructNode) Name() string   { return s.Node.Name }
+func (s StructNode) Code() string        { return pkgutils.NodeToCode(s.fset, s.genNode) }
+func (s StructNode) PrintNode()          { fmt.Println(s.Code()) }
+func (s StructNode) PrintComments()      { fmt.Println(s.Comments()) }
+func (s StructNode) Name() string        { return s.Node.Name }
+func (s StructNode) Fields() []NamedType { return fieldListToNamedTypes(s.node.Fields, s.fset) }
+func (s StructNode) Comments() string    { return pkgutils.CommentGroupToString(s.genNode.Doc) }
 
 func (s StructNode) Body() string {
 	structFields := pkgutils.NodeToCode(s.fset, s.node)
@@ -64,19 +70,23 @@ func (s StructNode) Body() string {
 
 func (s StructNode) Signature() string {
 	signature := s.Node.Name
-	if s.spec.TypeParams != nil {
-		var params []string
-		for _, field := range s.spec.TypeParams.List {
+	if s.spec.TypeParams == nil {
+		return signature
+	}
+
+	var params []string
+	for _, field := range s.spec.TypeParams.List {
+		if field != nil {
 			for _, name := range field.Names {
-				params = append(params, name.Name)
+				if name != nil {
+					params = append(params, name.Name)
+				}
 			}
 		}
-		signature += "[" + strings.Join(params, ", ") + "]"
 	}
+	signature += "[" + strings.Join(params, ", ") + "]"
 	return signature
 }
-
-func (s StructNode) Comments() string { return pkgutils.CommentGroupToString(s.genNode.Doc) }
 
 type MethodNode struct {
 	Node        BaseNode
@@ -99,6 +109,9 @@ func (m *MethodNode) addMethodCall(method string) {
 }
 
 func (m MethodNode) HasPointerReceiver() bool {
+	if pkgutils.MethodWithoutReceiver(m.CallableOps.node) {
+		return false
+	}
 	_, isPointer := m.CallableOps.node.Recv.List[0].Type.(*ast.StarExpr)
 	return isPointer
 }
@@ -117,6 +130,10 @@ func (m MethodNode) PrintComments() { fmt.Println(m.CallableOps.Comments()) }
 func (m MethodNode) Name() string   { return m.Node.Name }
 
 func (m MethodNode) ReceiverType() string {
+	if pkgutils.MethodWithoutReceiver(m.CallableOps.node) {
+		return ""
+	}
+
 	structType := m.CallableOps.node.Recv.List[0].Type
 	switch expr := structType.(type) {
 	case *ast.Ident:
@@ -142,8 +159,13 @@ func (m MethodNode) ReceiverType() string {
 }
 
 func (m MethodNode) ReceiverName() string {
-	if len(m.CallableOps.node.Recv.List[0].Names) > 0 {
-		return m.CallableOps.node.Recv.List[0].Names[0].Name
+	if pkgutils.MethodWithoutRecvList(m.CallableOps.node) {
+		return ""
+	}
+
+	receiverName := m.CallableOps.node.Recv.List[0]
+	if receiverName != nil && len(receiverName.Names) > 0 && receiverName.Names[0] != nil {
+		return receiverName.Names[0].Name
 	}
 	return ""
 }
@@ -167,13 +189,15 @@ type CallableOps struct {
 func (c CallableOps) PrintReturnType() { fmt.Println(c.ReturnType()) }
 func (c CallableOps) PrintBody()       { fmt.Println(c.Body()) }
 func (c CallableOps) PrintSignature()  { fmt.Println(c.Signature()) }
-
-func (c CallableOps) Parameters() []NamedType {
-	return fieldListToNamedTypes(*c.node.Type.Params, c.fset)
-}
-
 func (c CallableOps) Comments() string { return pkgutils.CommentGroupToString(c.node.Doc) }
 func (c CallableOps) Body() string     { return pkgutils.NodeToCode(c.fset, c.node.Body) }
+
+func (c CallableOps) Parameters() []NamedType {
+	if c.node.Type == nil {
+		return make([]NamedType, 0)
+	}
+	return fieldListToNamedTypes(c.node.Type.Params, c.fset)
+}
 
 func (c CallableOps) Code() string {
 	nodeOriginalDoc := c.node.Doc
@@ -212,9 +236,11 @@ func (c CallableOps) ReturnType() string {
 
 func (c CallableOps) ReturnTypes() []string {
 	returnTypes := make([]string, 0, 5)
-	if c.node.Type.Results != nil {
+	if c.node.Type != nil && c.node.Type.Results != nil {
 		for _, returnType := range c.node.Type.Results.List {
-			returnTypes = append(returnTypes, pkgutils.NodeToCode(c.fset, returnType.Type))
+			if returnType != nil && returnType.Type != nil {
+				returnTypes = append(returnTypes, pkgutils.NodeToCode(c.fset, returnType.Type))
+			}
 		}
 	}
 	return returnTypes

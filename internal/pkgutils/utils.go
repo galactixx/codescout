@@ -12,6 +12,14 @@ import (
 	"strings"
 )
 
+func checkFirstRecvItem(recvList []*ast.Field) bool {
+	return recvList[0] == nil || recvList[0].Type == nil
+}
+func MethodWithoutRecvList(funcDecl *ast.FuncDecl) bool { return len(funcDecl.Recv.List) == 0 }
+func MethodWithoutReceiver(funcDecl *ast.FuncDecl) bool {
+	return MethodWithoutRecvList(funcDecl) || checkFirstRecvItem(funcDecl.Recv.List)
+}
+
 func FromEmptyMapKeysToSlice(someMap map[string]*int) []string {
 	fieldsAccessed := make([]string, 0, 10)
 	for key := range someMap {
@@ -76,7 +84,9 @@ func CommentGroupToString(comment *ast.CommentGroup) string {
 	}
 	var buf bytes.Buffer
 	for _, comment := range comment.List {
-		buf.WriteString(comment.Text)
+		if comment != nil {
+			buf.WriteString(comment.Text)
+		}
 	}
 	return buf.String()
 }
