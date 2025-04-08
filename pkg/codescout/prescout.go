@@ -7,21 +7,27 @@ import (
 	"github.com/galactixx/codescout/internal/validation"
 )
 
+// preScoutSetup defines an interface for initializing an inspector of a generic type T.
 type preScoutSetup[T any] interface {
 	initializeInspect() (inspector[T], error)
 }
 
+// funcScoutSetup holds configuration for scanning functions.
 type funcScoutSetup struct {
 	Path   string
 	Config FuncConfig
 }
 
+// initializeInspect validates function-related configuration and returns an inspector for FuncNode.
+//
 //lint:ignore U1000 used via interface
 func (s funcScoutSetup) initializeInspect() (inspector[FuncNode], error) {
+	// Check if the provided path exists.
 	if fileExistsErr := pkgutils.FilePathExists(s.Path); fileExistsErr != nil {
 		return nil, fileExistsErr
 	}
 
+	// Create validation rules for function parameters and return types.
 	batchValidation := validation.BatchConfigValidation{
 		SliceValidators: []validation.SliceValidator{
 			validation.SlicePairToValidate[NamedType]{
@@ -36,11 +42,13 @@ func (s funcScoutSetup) initializeInspect() (inspector[FuncNode], error) {
 		Exact: s.Config.Exact,
 	}
 
+	// Run batch validation and return an error if it fails.
 	batchErr := batchValidation.Validate()
 	if batchErr != nil {
 		return nil, batchErr
 	}
 
+	// Create and return the function inspector.
 	inspector := funcInspector{
 		Nodes:  []*FuncNode{},
 		Config: s.Config,
@@ -49,17 +57,22 @@ func (s funcScoutSetup) initializeInspect() (inspector[FuncNode], error) {
 	return &inspector, nil
 }
 
+// methodScoutSetup holds configuration for scanning methods.
 type methodScoutSetup struct {
 	Path   string
 	Config MethodConfig
 }
 
+// initializeInspect validates method-related configuration and returns an inspector for MethodNode.
+//
 //lint:ignore U1000 used via interface
 func (s methodScoutSetup) initializeInspect() (inspector[MethodNode], error) {
+	// Check if the provided path exists.
 	if fileExistsErr := pkgutils.FilePathExists(s.Path); fileExistsErr != nil {
 		return nil, fileExistsErr
 	}
 
+	// Create validation rules for method fields, methods, return types, and parameters.
 	batchValidation := validation.BatchConfigValidation{
 		SliceValidators: []validation.SliceValidator{
 			validation.SlicePairToValidate[string]{
@@ -82,11 +95,13 @@ func (s methodScoutSetup) initializeInspect() (inspector[MethodNode], error) {
 		Exact: s.Config.Exact,
 	}
 
+	// Run batch validation and return an error if it fails.
 	batchErr := batchValidation.Validate()
 	if batchErr != nil {
 		return nil, batchErr
 	}
 
+	// Create and return the method inspector.
 	inspector := methodInspector{
 		Nodes:  []*MethodNode{},
 		Config: s.Config,
@@ -95,17 +110,22 @@ func (s methodScoutSetup) initializeInspect() (inspector[MethodNode], error) {
 	return &inspector, nil
 }
 
+// structScoutSetup holds configuration for scanning structs.
 type structScoutSetup struct {
 	Path   string
 	Config StructConfig
 }
 
+// initializeInspect validates struct-related configuration and returns an inspector for StructNode.
+//
 //lint:ignore U1000 used via interface
 func (s structScoutSetup) initializeInspect() (inspector[StructNode], error) {
+	// Check if the provided path exists.
 	if fileExistsErr := pkgutils.FilePathExists(s.Path); fileExistsErr != nil {
 		return nil, fileExistsErr
 	}
 
+	// Create validation rules for struct fields.
 	batchValidation := validation.BatchConfigValidation{
 		SliceValidators: []validation.SliceValidator{
 			validation.SlicePairToValidate[NamedType]{
@@ -116,11 +136,13 @@ func (s structScoutSetup) initializeInspect() (inspector[StructNode], error) {
 		Exact: s.Config.Exact,
 	}
 
+	// Run batch validation and return an error if it fails.
 	batchErr := batchValidation.Validate()
 	if batchErr != nil {
 		return nil, batchErr
 	}
 
+	// Create and return the struct inspector.
 	inspector := structInspector{
 		Nodes:  map[string]*StructNode{},
 		Config: s.Config,
