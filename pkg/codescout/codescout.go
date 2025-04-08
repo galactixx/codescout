@@ -53,10 +53,10 @@ func getFirstOccurrence[T any](preScout preScoutSetup[T], symbol string) (*T, er
 		err := errors.New(errMsg)
 		return nil, err
 	}
-	return &(inspector.getNodes())[0], nil
+	return inspector.getNodes()[0], nil
 }
 
-func getAllOccurrences[T any](preScout preScoutSetup[T]) ([]T, error) {
+func getAllOccurrences[T any](preScout preScoutSetup[T]) ([]*T, error) {
 	inspector, err := preScout.initializeInspect()
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func ScoutFunction(path string, config FuncConfig) (*FuncNode, error) {
 	return getFirstOccurrence(funcScoutSetup{Path: path, Config: config}, "function")
 }
 
-func ScoutFunctions(path string, config FuncConfig) ([]FuncNode, error) {
+func ScoutFunctions(path string, config FuncConfig) ([]*FuncNode, error) {
 	return getAllOccurrences(funcScoutSetup{Path: path, Config: config})
 }
 
@@ -77,7 +77,7 @@ func ScoutStruct(path string, config StructConfig) (*StructNode, error) {
 	return getFirstOccurrence(structScoutSetup{Path: path, Config: config}, "struct")
 }
 
-func ScoutStructs(path string, config StructConfig) ([]StructNode, error) {
+func ScoutStructs(path string, config StructConfig) ([]*StructNode, error) {
 	return getAllOccurrences(structScoutSetup{Path: path, Config: config})
 }
 
@@ -85,6 +85,6 @@ func ScoutMethod(path string, config MethodConfig) (*MethodNode, error) {
 	return getFirstOccurrence(methodScoutSetup{Path: path, Config: config}, "method")
 }
 
-func ScoutMethods(path string, config MethodConfig) ([]MethodNode, error) {
+func ScoutMethods(path string, config MethodConfig) ([]*MethodNode, error) {
 	return getAllOccurrences(methodScoutSetup{Path: path, Config: config})
 }

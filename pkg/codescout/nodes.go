@@ -42,7 +42,7 @@ type BaseNode struct {
 
 type StructNode struct {
 	Node    BaseNode
-	Methods []MethodNode
+	Methods []*MethodNode
 
 	node    *ast.StructType
 	spec    *ast.TypeSpec

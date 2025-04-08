@@ -84,8 +84,8 @@ func init() {
 	flags.StringVarP(methodCmd, &methodNoReturn, "u", "", "if the method has no return type (true/false)")
 	flags.StringVarP(methodCmd, &noFieldsAccessed, "d", "", "if the method does not access struct fields (true/false)")
 	flags.StringVarP(methodCmd, &noMethodsCalled, "e", "", "if the method does not call struct methods (true/false)")
-	flags.BoolVarP(methodCmd, &methodVerbose, "v", false, "whether to print all occurrences or just the first")
-	flags.BoolVarP(methodCmd, &methodExact, "x", false, "if an exact match should occur with slice flags")
+	flags.BoolVarP(methodCmd, &methodVerbose, "v", false, "whether to print all occurrences or just the first (true/false)")
+	flags.BoolVarP(methodCmd, &methodExact, "x", false, "if an exact match should occur with slice flags (true/false)")
 	flags.StringVarP(
 		methodCmd,
 		&methodOutputType,

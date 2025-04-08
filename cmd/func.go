@@ -60,8 +60,8 @@ func init() {
 	flags.StringSliceVarP(funcCmd, &funcReturnTypes, "r", make([]string, 0), "return types of function")
 	flags.StringVarP(funcCmd, &funcNoParams, "s", "", "if the function has no parameters (true/false)")
 	flags.StringVarP(funcCmd, &funcNoReturn, "u", "", "if the function has no return type (true/false)")
-	flags.BoolVarP(funcCmd, &funcVerbose, "v", false, "whether to print all occurrences or just the first")
-	flags.BoolVarP(funcCmd, &funcExact, "x", false, "if an exact match should occur with slice flags")
+	flags.BoolVarP(funcCmd, &funcVerbose, "v", false, "whether to print all occurrences or just the first (true/false)")
+	flags.BoolVarP(funcCmd, &funcExact, "x", false, "if an exact match should occur with slice flags (true/false)")
 	flags.StringVarP(
 		funcCmd,
 		&funcOutputType,

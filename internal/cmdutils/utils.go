@@ -14,7 +14,6 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )
 
@@ -45,14 +44,6 @@ func (o OutputOptions[T]) ToOptionString() string {
 
 func (o OutputOptions[T]) getOutputCallable(option string) func(T) string {
 	return o.Options[option]
-}
-
-func CountFlagsSet(cmd *cobra.Command) int {
-	count := 0
-	cmd.Flags().Visit(func(f *pflag.Flag) {
-		count++
-	})
-	return count
 }
 
 func argsToNamedTypes(argTypes []string, parameterTypes *[]codescout.NamedType) error {
@@ -93,10 +84,6 @@ func (v *CobraCommandVlidation[T]) GetNamedTypes() []codescout.NamedType {
 }
 
 func (v *CobraCommandVlidation[T]) CommandValidation(cmd *cobra.Command) error {
-	if CountFlagsSet(cmd) == 0 {
-		return errors.New("at least one flag must be set for this command")
-	}
-
 	validationErr := v.Validator.Validate(cmd)
 	if validationErr != nil {
 		return validationErr
@@ -118,7 +105,7 @@ func (v *CobraCommandVlidation[T]) CommandValidation(cmd *cobra.Command) error {
 
 func NewScoutContainer[T any, C any](
 	scoutFirst func(path string, config C) (*T, error),
-	scoutAll func(path string, config C) ([]T, error),
+	scoutAll func(path string, config C) ([]*T, error),
 	path string,
 	options OutputOptions[*T],
 	config C,
@@ -133,7 +120,7 @@ func NewScoutContainer[T any, C any](
 		boxWidth = width / 2
 	}
 
-	separatorSection := color.New(color.FgBlue, color.Bold)
+	separatorSection := color.New(color.FgHiBlack, color.Bold)
 	return ScoutContainer[T, C]{
 		ScoutFirst:     scoutFirst,
 		ScoutAll:       scoutAll,
@@ -149,7 +136,7 @@ func NewScoutContainer[T any, C any](
 
 type ScoutContainer[T any, C any] struct {
 	ScoutFirst     func(path string, config C) (*T, error)
-	ScoutAll       func(path string, config C) ([]T, error)
+	ScoutAll       func(path string, config C) ([]*T, error)
 	Path           string
 	Options        OutputOptions[*T]
 	BoxWidth       int
@@ -170,7 +157,7 @@ func (c ScoutContainer[T, C]) Display(verbose bool) error {
 			c.printOutput(
 				name,
 				idx == 0,
-				c.Options.getOutputCallable(c.OutputType)(&occurrence),
+				c.Options.getOutputCallable(c.OutputType)(occurrence),
 			)
 		}
 	} else {
@@ -230,13 +217,17 @@ func (c ScoutContainer[T, C]) printOutput(name string, showSeparator bool, outpu
 	titleSection.Println(" │")
 	titleSection.Println("╰" + boxOuterLine + "╯")
 
-	codeSection := color.New(color.FgHiWhite, color.Italic)
+	codeSection := color.New(color.FgWhite, color.Bold)
+	codeBorders := color.New(color.FgGreen, color.Bold)
+
 	wrapped := wordwrap.WrapString(output, uint(boxWidth-4))
 
-	codeSection.Println("╭" + boxOuterLine + "╮")
+	codeBorders.Println("╭" + boxOuterLine + "╮")
 	for line := range strings.SplitSeq(wrapped, "\n") {
-		codeSection.Printf("│ %-*s │\n", boxWidth-4, strings.Replace(line, "\t", "    ", -1))
+		codeBorders.Print("│ ")
+		codeSection.Printf("%-*s", boxWidth-4, strings.Replace(line, "\t", "    ", -1))
+		codeBorders.Println(" │")
 	}
-	codeSection.Println("╰" + boxOuterLine + "╯")
+	codeBorders.Println("╰" + boxOuterLine + "╯")
 	c.displaySeparator(separator)
 }

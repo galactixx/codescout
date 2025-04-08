@@ -5,7 +5,7 @@ import (
 	"github.com/galactixx/codescout/internal/validation"
 )
 
-func astNodeSliceMatch[T, C nodeMatchTypes](
+func astMatch[T, C nodeMatchTypes](
 	configTypes T, nodeTypes C, exact bool, notypes *bool, validator func(configTypes T, nodeTypse C) bool,
 ) aSTNodeSliceMatch[T, C] {
 	return aSTNodeSliceMatch[T, C]{

@@ -33,6 +33,7 @@ func (s funcScoutSetup) initializeInspect() (inspector[FuncNode], error) {
 				Bool:  validation.Arg("NoReturn", s.Config.NoReturn),
 			},
 		},
+		Exact: s.Config.Exact,
 	}
 
 	batchErr := batchValidation.Validate()
@@ -41,7 +42,7 @@ func (s funcScoutSetup) initializeInspect() (inspector[FuncNode], error) {
 	}
 
 	inspector := funcInspector{
-		Nodes:  []FuncNode{},
+		Nodes:  []*FuncNode{},
 		Config: s.Config,
 		Base:   baseInspector{Path: s.Path, Fset: token.NewFileSet()},
 	}
@@ -78,6 +79,7 @@ func (s methodScoutSetup) initializeInspect() (inspector[MethodNode], error) {
 				Bool:  validation.Arg("NoParams", s.Config.NoParams),
 			},
 		},
+		Exact: s.Config.Exact,
 	}
 
 	batchErr := batchValidation.Validate()
@@ -86,7 +88,7 @@ func (s methodScoutSetup) initializeInspect() (inspector[MethodNode], error) {
 	}
 
 	inspector := methodInspector{
-		Nodes:  []MethodNode{},
+		Nodes:  []*MethodNode{},
 		Config: s.Config,
 		Base:   baseInspector{Path: s.Path, Fset: token.NewFileSet()},
 	}
@@ -111,6 +113,7 @@ func (s structScoutSetup) initializeInspect() (inspector[StructNode], error) {
 				Bool:  validation.Arg("NoFields", s.Config.NoFields),
 			},
 		},
+		Exact: s.Config.Exact,
 	}
 
 	batchErr := batchValidation.Validate()

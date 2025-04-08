@@ -23,10 +23,11 @@ var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[s
 	"body":       func(node *codescout.StructNode) string { return node.Body() },
 	"signature":  func(node *codescout.StructNode) string { return node.Signature() },
 	"comment":    func(node *codescout.StructNode) string { return node.Comments() },
+	"methods":    func(node *codescout.StructNode) string { return "" },
 }}
 
 var structBatchValidator = flags.BatchValidator{
-	EmptyValidators:      []flags.FlagValidator{&structName},
+	EmptyValidators:      []flags.FlagValidator{&structName, &structFieldTypes},
 	StringBoolValidators: []*flags.CommandFlag[string]{&structNoFields},
 }
 
@@ -50,8 +51,8 @@ func init() {
 	flags.StringVarP(structCmd, &structName, "n", "", "the struct name")
 	flags.StringSliceVarP(structCmd, &structFieldTypes, "f", make([]string, 0), "field names and types of struct")
 	flags.StringVarP(structCmd, &structNoFields, "s", "", "if the struct has no fields (true/false)")
-	flags.BoolVarP(structCmd, &structVerbose, "v", false, "whether to print all occurrences or just the first")
-	flags.BoolVarP(structCmd, &structExact, "x", false, "if an exact match should occur with slice flags")
+	flags.BoolVarP(structCmd, &structVerbose, "v", false, "whether to print all occurrences or just the first (true/false)")
+	flags.BoolVarP(structCmd, &structExact, "x", false, "if an exact match should occur with slice flags (true/false)")
 	flags.StringVarP(
 		structCmd,
 		&structOutputType,

@@ -9,11 +9,11 @@ import (
 )
 
 type inspector[T any] interface {
-	isNodeMatch(name T) bool
-	appendNode(node T)
+	isNodeMatch(name *T) bool
+	appendNode(node *T)
 	inspector(n ast.Node) bool
 	inspect()
-	getNodes() []T
+	getNodes() []*T
 }
 
 type baseInspector struct {
@@ -61,19 +61,19 @@ type structInspector struct {
 	Base   baseInspector
 }
 
-func (i structInspector) isNodeMatch(node StructNode) bool {
+func (i structInspector) isNodeMatch(node *StructNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	matchFields := astNodeSliceMatch(i.Config.FieldTypes, node.Fields(), i.Config.Exact, i.Config.NoFields, namedTypesMatch)
+	matchFields := astMatch(i.Config.FieldTypes, node.Fields(), i.Config.Exact, i.Config.NoFields, namedTypesMatch)
 	return nameEquals && matchFields.validate()
 }
 
-func (i *structInspector) appendNode(node StructNode) {
-	i.Nodes[node.Node.Name] = &node
+func (i *structInspector) appendNode(node *StructNode) {
+	i.Nodes[node.Node.Name] = node
 }
 
 func (i *structInspector) inspect() {
 	methodsInspect := methodInspector{
-		Nodes:  []MethodNode{},
+		Nodes:  []*MethodNode{},
 		Config: MethodConfig{},
 		Base:   i.Base,
 	}
@@ -88,22 +88,22 @@ func (i *structInspector) inspect() {
 	}
 }
 
-func (i *structInspector) getNodes() []StructNode {
-	structNodes := make([]StructNode, 0, len(i.Nodes))
+func (i *structInspector) getNodes() []*StructNode {
+	structNodes := make([]*StructNode, 0, len(i.Nodes))
 	for _, node := range i.Nodes {
-		structNodes = append(structNodes, *node)
+		structNodes = append(structNodes, node)
 	}
 	return structNodes
 }
 
-func (i structInspector) newStruct(node ast.Node, gen *ast.GenDecl, spec *ast.TypeSpec) StructNode {
+func (i structInspector) newStruct(node ast.Node, gen *ast.GenDecl, spec *ast.TypeSpec) *StructNode {
 	var comment string = ""
 	if gen.Doc != nil {
 		comment = gen.Doc.Text()
 	}
 	baseNode := i.Base.newNode(spec.Name.Name, node, comment)
 	structNode := node.(*ast.StructType)
-	return StructNode{
+	return &StructNode{
 		Node: baseNode, node: structNode, spec: spec, genNode: gen, fset: i.Base.Fset,
 	}
 }
@@ -128,37 +128,37 @@ func (i *structInspector) inspector(node ast.Node) bool {
 }
 
 type methodInspector struct {
-	Nodes  []MethodNode
+	Nodes  []*MethodNode
 	Config MethodConfig
 	Base   baseInspector
 }
 
-func (i methodInspector) isNodeMatch(node MethodNode) bool {
+func (i methodInspector) isNodeMatch(node *MethodNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	matchReturn := astNodeSliceMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
-	matchParams := astNodeSliceMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
+	matchReturn := astMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
+	matchParams := astMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
 	validReceiver := !(i.Config.Receiver != "" && i.Config.Receiver != node.ReceiverType())
 
 	validPtr := i.Config.IsPointerRec == nil || *i.Config.IsPointerRec == node.HasPointerReceiver()
 	return nameEquals && matchReturn.validate() && matchParams.validate() && validReceiver && validPtr
 }
 
-func (i methodInspector) isAttrsMatch(node MethodNode) bool {
-	matchAccessed := astNodeSliceMatch(i.Config.Fields, node.FieldsAccessed(), i.Config.Exact, i.Config.NoFields, accessedMatch)
-	matchCalled := astNodeSliceMatch(i.Config.Methods, node.MethodsCalled(), i.Config.Exact, i.Config.NoMethods, accessedMatch)
+func (i methodInspector) isAttrsMatch(node *MethodNode) bool {
+	matchAccessed := astMatch(i.Config.Fields, node.FieldsAccessed(), i.Config.Exact, i.Config.NoFields, accessedMatch)
+	matchCalled := astMatch(i.Config.Methods, node.MethodsCalled(), i.Config.Exact, i.Config.NoMethods, accessedMatch)
 	return matchAccessed.validate() && matchCalled.validate()
 }
 
-func (i *methodInspector) appendNode(node MethodNode) { i.Nodes = append(i.Nodes, node) }
+func (i *methodInspector) appendNode(node *MethodNode) { i.Nodes = append(i.Nodes, node) }
 func (i *methodInspector) inspect() {
 	node := pkgutils.ParseFile(i.Base.Path, i.Base.Fset)
 	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
-func (i methodInspector) getNodes() []MethodNode { return i.Nodes }
-func (i methodInspector) newMethod(name string, node ast.Node, comment string) MethodNode {
+func (i methodInspector) getNodes() []*MethodNode { return i.Nodes }
+func (i methodInspector) newMethod(name string, node ast.Node, comment string) *MethodNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
-	return MethodNode{
+	return &MethodNode{
 		Node:           baseNode,
 		CallableOps:    CallableOps{node: funcNode, fset: i.Base.Fset},
 		fieldsAccessed: make(map[string]*int),
@@ -211,19 +211,19 @@ func (i *methodInspector) inspector(n ast.Node) bool {
 }
 
 type funcInspector struct {
-	Nodes  []FuncNode
+	Nodes  []*FuncNode
 	Config FuncConfig
 	Base   baseInspector
 }
 
-func (i funcInspector) isNodeMatch(node FuncNode) bool {
+func (i funcInspector) isNodeMatch(node *FuncNode) bool {
 	nameEquals := !(i.Config.Name != "" && i.Config.Name != node.Node.Name)
-	matchReturn := astNodeSliceMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
-	matchParams := astNodeSliceMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
+	matchReturn := astMatch(i.Config.ReturnTypes, node.CallableOps.ReturnTypes(), i.Config.Exact, i.Config.NoReturn, returnMatch)
+	matchParams := astMatch(i.Config.ParamTypes, node.CallableOps.Parameters(), i.Config.Exact, i.Config.NoParams, namedTypesMatch)
 	return nameEquals && matchReturn.validate() && matchParams.validate()
 }
 
-func (i *funcInspector) appendNode(node FuncNode) {
+func (i *funcInspector) appendNode(node *FuncNode) {
 	i.Nodes = append(i.Nodes, node)
 }
 
@@ -232,10 +232,10 @@ func (i *funcInspector) inspect() {
 	i.Base.inspect(node, []func(n ast.Node) bool{i.inspector})
 }
 
-func (i funcInspector) getNodes() []FuncNode { return i.Nodes }
-func (i funcInspector) newFunction(name string, node ast.Node, comment string) FuncNode {
+func (i funcInspector) getNodes() []*FuncNode { return i.Nodes }
+func (i funcInspector) newFunction(name string, node ast.Node, comment string) *FuncNode {
 	baseNode, funcNode := i.Base.getCallableNodes(name, node, comment)
-	return FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode, fset: i.Base.Fset}}
+	return &FuncNode{Node: baseNode, CallableOps: CallableOps{node: funcNode, fset: i.Base.Fset}}
 }
 
 func (i *funcInspector) inspector(n ast.Node) bool {
