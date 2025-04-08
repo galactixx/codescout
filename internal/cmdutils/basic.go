@@ -9,7 +9,7 @@ import (
 
 func findLengthOfOutput(output string) int {
 	maxLineLength := 0
-	for line := range strings.SplitSeq(output, "\n") {
+	for _, line := range strings.Split(output, "\n") {
 		maxLineLength = getMax(maxLineLength, len(line))
 	}
 	return maxLineLength

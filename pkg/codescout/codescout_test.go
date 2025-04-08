@@ -46,7 +46,7 @@ func TestScoutFunction(t *testing.T) {
 	}
 	tests := []FuncTestCase{
 		{
-			Name:   "test simple function",
+			Name:   "test Greet function",
 			Config: FuncConfig{Name: "Greet"},
 			Expected: FuncTestCaseExpected{
 				Path:       path,
@@ -54,6 +54,28 @@ func TestScoutFunction(t *testing.T) {
 				Characters: 1,
 				Exported:   true,
 				Comment:    "Above above function\nAbove function\nFunction",
+			},
+		},
+		{
+			Name:   "test main function",
+			Config: FuncConfig{Name: "main"},
+			Expected: FuncTestCaseExpected{
+				Path:       path,
+				Line:       44,
+				Characters: 1,
+				Exported:   false,
+				Comment:    "",
+			},
+		},
+		{
+			Name:   "test Factorial function",
+			Config: FuncConfig{Name: "Factorial"},
+			Expected: FuncTestCaseExpected{
+				Path:       path,
+				Line:       54,
+				Characters: 1,
+				Exported:   true,
+				Comment:    "Factorial function",
 			},
 		},
 	}

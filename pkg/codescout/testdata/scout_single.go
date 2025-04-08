@@ -40,3 +40,20 @@ var cars = []Car{
 	{"Toyota", "Camry", 2020},
 	{"Honda", "Accord", 2021},
 }
+
+func main() {
+	user := User{Name: "Alice", Age: 17}
+	user.PrintTasks()
+	user.AddTask("Buy groceries")
+	user.Promote()
+	user.AddTask("Read Go documentation")
+	user.PrintTasks()
+}
+
+// Factorial function
+func Factorial(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return n * Factorial(n-1)
+}

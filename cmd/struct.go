@@ -23,7 +23,6 @@ var structOptions = cmdutils.OutputOptions[*codescout.StructNode]{Options: map[s
 	"body":       func(node *codescout.StructNode) string { return node.Body() },
 	"signature":  func(node *codescout.StructNode) string { return node.Signature() },
 	"comment":    func(node *codescout.StructNode) string { return node.Comments() },
-	"methods":    func(node *codescout.StructNode) string { return "" },
 }}
 
 var structBatchValidator = flags.BatchValidator{

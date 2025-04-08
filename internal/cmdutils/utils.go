@@ -223,7 +223,7 @@ func (c ScoutContainer[T, C]) printOutput(name string, showSeparator bool, outpu
 	wrapped := wordwrap.WrapString(output, uint(boxWidth-4))
 
 	codeBorders.Println("╭" + boxOuterLine + "╮")
-	for line := range strings.SplitSeq(wrapped, "\n") {
+	for _, line := range strings.Split(wrapped, "\n") {
 		codeBorders.Print("│ ")
 		codeSection.Printf("%-*s", boxWidth-4, strings.Replace(line, "\t", "    ", -1))
 		codeBorders.Println(" │")
