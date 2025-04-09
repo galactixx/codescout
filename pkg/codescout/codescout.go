@@ -15,15 +15,15 @@ type NamedType struct {
 type FuncConfig struct {
 	// Name of the function.
 	Name string
-	// Expected parameter types with names.
+	// Expected parameter types (a subset unless exact is specified).
 	ParamTypes []NamedType
-	// Expected return types.
+	// Expected return types (a subset unless exact is specified).
 	ReturnTypes []string
 	// If true, function should have no parameters.
 	NoParams *bool
 	// If true, function should have no return values.
 	NoReturn *bool
-	// If true, match must be exact on parameters/returns.
+	// If true, all criteria slices must match exactly.
 	Exact bool
 }
 
@@ -31,27 +31,27 @@ type FuncConfig struct {
 type MethodConfig struct {
 	// Name of the method.
 	Name string
-	// Expected parameter types.
+	// Expected parameter types (a subset unless exact is specified).
 	ParamTypes []NamedType
-	// Expected return types.
+	// Expected return types (a subset unless exact is specified).
 	ReturnTypes []string
 	// Type of the receiver.
 	Receiver string
 	// If true, method must have pointer receiver.
 	IsPointerRec *bool
-	// Fields that must be present in receiver struct.
+	// Struct fields that must be accessed within method.
 	Fields []string
-	// Methods that must be present in receiver struct.
+	// Struct methods that must be called within method.
 	Methods []string
 	// If true, method should have no parameters.
 	NoParams *bool
 	// If true, method should have no return values.
 	NoReturn *bool
-	// If true, receiver struct must not have fields.
+	// If true, the method must not access any of the struct fields.
 	NoFields *bool
-	// If true, receiver struct must not have methods.
+	// If true, the method must not call any of the struct methods.
 	NoMethods *bool
-	// If true, all config criteria must match exactly.
+	// If true, all criteria slices must match exactly.
 	Exact bool
 }
 
@@ -63,7 +63,7 @@ type StructConfig struct {
 	FieldTypes []NamedType
 	// If true, struct should not have fields.
 	NoFields *bool
-	// If true, match must be exact.
+	// If true, all criteria slices must match exactly.
 	Exact bool
 }
 

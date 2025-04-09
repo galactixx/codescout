@@ -57,7 +57,7 @@ func init() {
 		&structOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("part of struct to output, must be one of: %v", structOptions.ToOptionString()),
+		fmt.Sprintf("part of struct to output, must be one of: %s", structOptions.ToOptionString()),
 	)
 }
 

@@ -19,7 +19,7 @@ import (
 
 var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-func JoinAttrs(attrs []string) string { return fmt.Sprintf("[ %v ]", strings.Join(attrs, ",")) }
+func JoinAttrs(attrs []string) string { return fmt.Sprintf("[ %s ]", strings.Join(attrs, ",")) }
 func stripANSI(input string) string   { return ansiRegexp.ReplaceAllString(input, "") }
 
 type OutputOptions[T any] struct {
@@ -29,7 +29,7 @@ type OutputOptions[T any] struct {
 func (o OutputOptions[T]) validation(cmd *cobra.Command, flag flags.CommandFlag[string]) error {
 	_, outputValid := o.Options[flag.Variable]
 	if cmd.Flags().Changed("output") && !outputValid {
-		return fmt.Errorf("%v flag must be one of: %v", flag.Name, o.ToOptionString())
+		return fmt.Errorf("%s flag must be one of: %s", flag.Name, o.ToOptionString())
 	}
 	return nil
 }

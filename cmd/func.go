@@ -67,7 +67,7 @@ func init() {
 		&funcOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("part of function to output, must be one of: %v", funcOptions.ToOptionString()),
+		fmt.Sprintf("part of function to output, must be one of: %s", funcOptions.ToOptionString()),
 	)
 }
 

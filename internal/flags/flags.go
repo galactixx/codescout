@@ -57,11 +57,11 @@ func (v CommandFlag[T]) emptyValidator(command *cobra.Command) bool {
 }
 
 func (v CommandFlag[T]) isEmptyMessage() error {
-	return fmt.Errorf("if name %v is specified it must not be empty", v.Name)
+	return fmt.Errorf("if name %s is specified it must not be empty", v.Name)
 }
 
 func (v CommandFlag[T]) stringBoolMessage() error {
-	return fmt.Errorf("if %v flag is specified it must be: true or false", v.Name)
+	return fmt.Errorf("if %s flag is specified it must be: true or false", v.Name)
 }
 
 type BatchValidator struct {

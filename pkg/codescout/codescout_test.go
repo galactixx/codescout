@@ -25,7 +25,7 @@ func compareStructValues(t *testing.T, actual any, expected any) {
 		eValue := expectedV.FieldByName(name).Interface()
 		aValue := actualV.FieldByName(name).Interface()
 		if aValue != eValue {
-			t.Errorf("field %v - expected %v, got %v", name, eValue, aValue)
+			t.Errorf("field %s - expected %s, got %s", name, eValue, aValue)
 		}
 	}
 }

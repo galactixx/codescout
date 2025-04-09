@@ -91,7 +91,7 @@ func init() {
 		&methodOutputType,
 		"o",
 		"definition",
-		fmt.Sprintf("part of method to output, must be one of: %v", methodOptions.ToOptionString()),
+		fmt.Sprintf("part of method to output, must be one of: %s", methodOptions.ToOptionString()),
 	)
 }
 

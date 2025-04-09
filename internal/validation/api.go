@@ -26,11 +26,11 @@ type SlicePairToValidate[T any] struct {
 }
 
 func (p SlicePairToValidate[T]) trueMessage() error {
-	return fmt.Errorf("%v cannot be specified if %v is set to true", p.Slice.Name, p.Bool.Name)
+	return fmt.Errorf("%s cannot be specified if %s is set to true", p.Slice.Name, p.Bool.Name)
 }
 
 func (p SlicePairToValidate[T]) falseMessage() error {
-	return fmt.Errorf("no need to specify %v if %v is set to false", p.Slice.Name, p.Bool.Name)
+	return fmt.Errorf("no need to specify %s if %s is set to false", p.Slice.Name, p.Bool.Name)
 }
 
 func (p SlicePairToValidate[T]) boolNotNil() bool {
