@@ -1,6 +1,10 @@
 package validation
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestTypeValidation(t *testing.T) {
 	typeValidation := TypeValidation{
@@ -8,53 +12,28 @@ func TestTypeValidation(t *testing.T) {
 		NamedTypesMap: map[string]string{"name": "string", "age": "int", "sex": "string", "married": "bool"},
 	}
 
-	if typeValidation.GetParamType("age") != "int" {
-		t.Errorf("Expected %s, got %s", "int", typeValidation.GetParamType("age"))
-	}
+	assert.Equal(t, "int", typeValidation.GetParamType("age"))
 
 	typeValidation.SetParamName("name")
-	if typeValidation.CurParamName != "name" {
-		t.Errorf("Expected %s, got %s", "name", typeValidation.CurParamName)
-	}
+	assert.Equal(t, "name", typeValidation.CurParamName)
 
 	typeValidation.SetParamType("string")
-	if typeValidation.CurParamType != "string" {
-		t.Errorf("Expected %s, got %s", "string", typeValidation.CurParamType)
-	}
+	assert.Equal(t, "string", typeValidation.CurParamType)
 
 	typeValidation.SetNameInParams("age")
-	if !typeValidation.CurNameInParams {
-		t.Errorf("Expected %v, got %v", true, false)
-	}
+	assert.True(t, typeValidation.CurNameInParams)
 
 	typeValidation.SetNameInParams("lastName")
-	if typeValidation.CurNameInParams {
-		t.Errorf("Expected %v, got %v", false, true)
-	}
+	assert.False(t, typeValidation.CurNameInParams)
 
 	typeValidation.SetParamInfo("age", "int")
-	if typeValidation.CurParamName != "age" {
-		t.Errorf("Expected %s, got %s", "age", typeValidation.CurParamName)
-	}
-
-	if typeValidation.CurParamType != "int" {
-		t.Errorf("Expected %s, got %s", "int", typeValidation.CurParamType)
-	}
+	assert.Equal(t, "age", typeValidation.CurParamName)
+	assert.Equal(t, "int", typeValidation.CurParamType)
 
 	typeValidation.SetNameInParams("age")
-	if !typeValidation.TypeExists() {
-		t.Errorf("Expected %v, got %v", true, false)
-	}
+	assert.True(t, typeValidation.TypeExists())
+	assert.True(t, typeValidation.TypeExclExists())
 
-	if !typeValidation.TypeExclExists() {
-		t.Errorf("Expected %v, got %v", true, false)
-	}
-
-	if exhausted := typeValidation.HasExhausted("bool"); exhausted {
-		t.Errorf("Expected %v, got %v", false, true)
-	}
-
-	if exhausted := typeValidation.HasExhausted("bool"); !exhausted {
-		t.Errorf("Expected %v, got %v", true, false)
-	}
+	assert.False(t, typeValidation.HasExhausted("bool"))
+	assert.True(t, typeValidation.HasExhausted("bool"))
 }

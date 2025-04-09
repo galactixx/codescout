@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func compareStructValues(t *testing.T, actual any, expected any) {
@@ -21,12 +23,11 @@ func compareStructValues(t *testing.T, actual any, expected any) {
 
 	for i := 0; i < expectedType.NumField(); i++ {
 		name := expectedType.Field(i).Name
-
-		eValue := expectedV.FieldByName(name).Interface()
-		aValue := actualV.FieldByName(name).Interface()
-		if aValue != eValue {
-			t.Errorf("field %s - expected %s, got %s", name, eValue, aValue)
-		}
+		assert.Equal(
+			t,
+			expectedV.FieldByName(name).Interface(),
+			actualV.FieldByName(name).Interface(),
+		)
 	}
 }
 
@@ -82,9 +83,7 @@ func TestScoutFunction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			funcNode, err := ScoutFunction(path, tt.Config)
-			if err != nil {
-				t.Errorf("got %v, expected %v", err, nil)
-			}
+			assert.NoError(t, err)
 			compareStructValues(t, funcNode.Node, tt.Expected)
 		})
 	}

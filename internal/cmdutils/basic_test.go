@@ -1,6 +1,10 @@
 package cmdutils
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 // mockNodeInfo is a mock implementation of the NodeInfo interface
 type mockNodeInfo struct {
@@ -15,10 +19,7 @@ func (m mockNodeInfo) Name() string   { return m.name }
 func TestFindLengthOfOutput(t *testing.T) {
 	output := "short\nmuch longer line\nmid"
 	expected := len("much longer line")
-
-	if result := findLengthOfOutput(output); result != expected {
-		t.Errorf("Expected %d, got %d", expected, result)
-	}
+	assert.Equal(t, findLengthOfOutput(output), expected)
 }
 
 func TestGetMax(t *testing.T) {
@@ -32,37 +33,26 @@ func TestGetMax(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if result := getMax(tt.a, tt.b); result != tt.expected {
-			t.Errorf("GetMax(%d, %d) = %d; expected %d", tt.a, tt.b, result, tt.expected)
-		}
+		assert.Equal(t, getMax(tt.a, tt.b), tt.expected)
 	}
 }
 
 func TestCapitalizeString(t *testing.T) {
 	input := "some-long-name"
 	expected := "Some Long Name"
-
-	if result := capitalizeString(input); result != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, result)
-	}
+	assert.Equal(t, capitalizeString(input), expected)
 }
 
 func TestGetNameFromNodes(t *testing.T) {
 	node := mockNodeInfo{name: "TestNode"}
 
 	name := getNameFromNodes(node)
-	if name != "TestNode" {
-		t.Errorf("Expected 'TestNode', got '%s'", name)
-	}
+	assert.Equal(t, "TestNode", name)
 
 	ptr := &node
 	name = getNameFromNodes(ptr)
-	if name != "TestNode" {
-		t.Errorf("Expected 'TestNode' (pointer), got '%s'", name)
-	}
+	assert.Equal(t, "TestNode", name)
 
 	name = getNameFromNodes(123)
-	if name != "" {
-		t.Errorf("Expected empty string for non-matching type, got '%s'", name)
-	}
+	assert.Equal(t, "", name)
 }
