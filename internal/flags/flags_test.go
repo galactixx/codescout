@@ -48,7 +48,7 @@ func TestBoolVarP(t *testing.T) {
 	assert.True(t, flag.Variable)
 }
 
-func TestEmptyValidator_String(t *testing.T) {
+func TestEmptyValidatorString(t *testing.T) {
 	cmd := &cobra.Command{}
 	flag := CommandFlag[string]{Name: "email"}
 	StringVarP(cmd, &flag, "e", "", "usage")
@@ -59,7 +59,7 @@ func TestEmptyValidator_String(t *testing.T) {
 	assert.True(t, flag.emptyValidator(cmd))
 }
 
-func TestEmptyValidator_Slice(t *testing.T) {
+func TestEmptyValidatorSlice(t *testing.T) {
 	cmd := &cobra.Command{}
 	flag := CommandFlag[[]string]{Name: "items"}
 	StringSliceVarP(cmd, &flag, "i", make([]string, 0), "usage")
@@ -71,7 +71,7 @@ func TestEmptyValidator_Slice(t *testing.T) {
 	assert.False(t, flag.emptyValidator(cmd))
 }
 
-func TestBatchValidator_StringBoolValidator(t *testing.T) {
+func TestBatchValidatorStringBoolValidator(t *testing.T) {
 	cmd := &cobra.Command{}
 	flag := CommandFlag[string]{Name: "enabled"}
 	StringVarP(cmd, &flag, "e", "", "usage")
@@ -85,7 +85,7 @@ func TestBatchValidator_StringBoolValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "must be: true or false")
 }
 
-func TestBatchValidator_EmptyValidator(t *testing.T) {
+func TestBatchValidatorEmptyValidator(t *testing.T) {
 	cmd := &cobra.Command{}
 	strFlag := CommandFlag[string]{Name: "name"}
 	sliceFlag := CommandFlag[[]string]{Name: "list"}
@@ -102,7 +102,7 @@ func TestBatchValidator_EmptyValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "must not be empty")
 }
 
-func TestBatchValidator_AllValid(t *testing.T) {
+func TestBatchValidatorAllValid(t *testing.T) {
 	cmd := &cobra.Command{}
 	strFlag := CommandFlag[string]{Name: "verbose"}
 	StringVarP(cmd, &strFlag, "v", "true", "usage")

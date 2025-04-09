@@ -233,7 +233,7 @@ func (i *methodInspector) inspector(n ast.Node) bool {
 	return true
 }
 
-// funcInspector inspects top-level functions in the Go source.
+// funcInspector inspects functions in the Go source.
 type funcInspector struct {
 	Nodes  []*FuncNode
 	Config FuncConfig

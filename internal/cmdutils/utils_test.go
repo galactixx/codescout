@@ -49,7 +49,7 @@ func TestOutputOptionsToOptionString(t *testing.T) {
 	assert.Contains(t, optStr, "text")
 }
 
-func TestArgsToNamedTypes_Valid(t *testing.T) {
+func TestArgsToNamedTypesValid(t *testing.T) {
 	args := []string{"name:string", "age:int"}
 	var result []codescout.NamedType
 	err := argsToNamedTypes(args, &result)
@@ -59,7 +59,7 @@ func TestArgsToNamedTypes_Valid(t *testing.T) {
 	assert.Equal(t, "int", result[1].Type)
 }
 
-func TestArgsToNamedTypes_InvalidColonCount(t *testing.T) {
+func TestArgsToNamedTypesInvalidColonCount(t *testing.T) {
 	args := []string{"badarg"}
 	var result []codescout.NamedType
 	err := argsToNamedTypes(args, &result)
@@ -67,7 +67,7 @@ func TestArgsToNamedTypes_InvalidColonCount(t *testing.T) {
 	assert.Contains(t, err.Error(), "one colon")
 }
 
-func TestArgsToNamedTypes_EmptyParts(t *testing.T) {
+func TestArgsToNamedTypesEmptyParts(t *testing.T) {
 	args := []string{":"}
 	var result []codescout.NamedType
 	err := argsToNamedTypes(args, &result)
