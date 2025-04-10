@@ -1,4 +1,4 @@
-<img src="./logo.png" alt="CodeScout Logo" height="300"/>
+<img src="./logo.png" alt="CodeScout Logo" height="300" width="600"/>
 
 **CodeScout** is a Go package and CLI tool for analyzing and extracting structured representations of functions, methods, and structs from Go source files.
 
