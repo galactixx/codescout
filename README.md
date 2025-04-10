@@ -1,4 +1,4 @@
-![CodeScout Logo](./logo.png)
+![CodeScout Logo](./docs/logo.png)
 
 **CodeScout** is a Go package and CLI tool for analyzing and extracting structured representations of functions, methods, and structs from Go source files.
 
@@ -102,8 +102,31 @@ codescout func ./example.go -name=SomeFunc -params=input:string -return=error -o
 ---
 
 ## 🚀 Getting Started
+
+### 💼 Use as a Package
+
 ```bash
 go get github.com/galactixx/codescout@latest
+```
+
+Then import in your Go code:
+
+```go
+import "github.com/galactixx/codescout"
+```
+
+---
+
+### 🛠️ Install & Use the CLI
+
+```bash
+go install github.com/galactixx/codescout/cmd/codescout@latest
+```
+
+Then run:
+
+```bash
+codescout
 ```
 
 ---
