@@ -2,56 +2,24 @@ package codescout
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func compareStructValues(t *testing.T, actual any, expected any) {
-	actualV := reflect.ValueOf(actual)
-	expectedV := reflect.ValueOf(expected)
-	expectedType := expectedV.Type()
-
-	if actualV.Kind() == reflect.Ptr {
-		actualV = actualV.Elem()
-	}
-
-	if expectedV.Kind() == reflect.Ptr {
-		expectedV = expectedV.Elem()
-	}
-
-	for i := 0; i < expectedType.NumField(); i++ {
-		name := expectedType.Field(i).Name
-		assert.Equal(
-			t,
-			expectedV.FieldByName(name).Interface(),
-			actualV.FieldByName(name).Interface(),
-		)
-	}
-}
-
 func TestScoutFunction(t *testing.T) {
 	path := filepath.Join("testdata", "scout_single.go")
-	type FuncTestCaseExpected struct {
-		Name       string
-		Path       string
-		Line       int
-		Characters int
-		Exported   bool
-		Comment    string
-	}
 	type FuncTestCase struct {
 		Name     string
 		Config   FuncConfig
-		Expected FuncTestCaseExpected
+		Expected BaseNode
 	}
 	noParamsBool := true
 	tests := []FuncTestCase{
 		{
 			Name:   "test Greet function",
 			Config: FuncConfig{ReturnTypes: []string{"string"}, Exact: true},
-			Expected: FuncTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "Greet",
 				Path:       path,
 				Line:       20,
@@ -63,7 +31,7 @@ func TestScoutFunction(t *testing.T) {
 		{
 			Name:   "test main function",
 			Config: FuncConfig{NoParams: &noParamsBool},
-			Expected: FuncTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "main",
 				Path:       path,
 				Line:       44,
@@ -75,7 +43,7 @@ func TestScoutFunction(t *testing.T) {
 		{
 			Name:   "test Factorial function",
 			Config: FuncConfig{ParamTypes: []NamedType{{Type: "int"}}, ReturnTypes: []string{"int"}},
-			Expected: FuncTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "Factorial",
 				Path:       path,
 				Line:       54,
@@ -89,25 +57,17 @@ func TestScoutFunction(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			funcNode, err := ScoutFunction(path, tt.Config)
 			assert.NoError(t, err)
-			compareStructValues(t, funcNode.Node, tt.Expected)
+			assert.Equal(t, tt.Expected, funcNode.Node)
 		})
 	}
 }
 
 func TestScoutMethod(t *testing.T) {
 	path := filepath.Join("testdata", "scout_single.go")
-	type MethodTestCaseExpected struct {
-		Name       string
-		Path       string
-		Line       int
-		Characters int
-		Exported   bool
-		Comment    string
-	}
 	type MethodTestCase struct {
 		Name     string
 		Config   MethodConfig
-		Expected MethodTestCaseExpected
+		Expected BaseNode
 	}
 	noReturnBool := true
 	isPointerReceiver := true
@@ -115,7 +75,7 @@ func TestScoutMethod(t *testing.T) {
 		{
 			Name:   "test Birthday method",
 			Config: MethodConfig{NoReturn: &noReturnBool, IsPointerRec: &isPointerReceiver},
-			Expected: MethodTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "Birthday",
 				Path:       path,
 				Line:       27,
@@ -127,7 +87,7 @@ func TestScoutMethod(t *testing.T) {
 		{
 			Name:   "test DisplayDetails method",
 			Config: MethodConfig{ReturnTypes: []string{"string"}, Receiver: "Car"},
-			Expected: MethodTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "DisplayDetails",
 				Path:       path,
 				Line:       32,
@@ -141,25 +101,17 @@ func TestScoutMethod(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			mehodNode, err := ScoutMethod(path, tt.Config)
 			assert.NoError(t, err)
-			compareStructValues(t, mehodNode.Node, tt.Expected)
+			assert.Equal(t, tt.Expected, mehodNode.Node)
 		})
 	}
 }
 
 func TestScoutStruct(t *testing.T) {
 	path := filepath.Join("testdata", "scout_single.go")
-	type StructTestCaseExpected struct {
-		Name       string
-		Path       string
-		Line       int
-		Characters int
-		Exported   bool
-		Comment    string
-	}
 	type StructTestCase struct {
 		Name     string
 		Config   StructConfig
-		Expected StructTestCaseExpected
+		Expected BaseNode
 	}
 	tests := []StructTestCase{
 		{
@@ -169,7 +121,7 @@ func TestScoutStruct(t *testing.T) {
 					{Name: "Name", Type: "string"}, {Name: "Age", Type: "int"},
 				}, Exact: true,
 			},
-			Expected: StructTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "Person",
 				Path:       path,
 				Line:       6,
@@ -181,7 +133,7 @@ func TestScoutStruct(t *testing.T) {
 		{
 			Name:   "test Car struct",
 			Config: StructConfig{FieldTypes: []NamedType{{Name: "Make", Type: "string"}}},
-			Expected: StructTestCaseExpected{
+			Expected: BaseNode{
 				Name:       "Car",
 				Path:       path,
 				Line:       11,
@@ -193,9 +145,9 @@ func TestScoutStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			mehodNode, err := ScoutStruct(path, tt.Config)
+			structNode, err := ScoutStruct(path, tt.Config)
 			assert.NoError(t, err)
-			compareStructValues(t, mehodNode.Node, tt.Expected)
+			assert.Equal(t, tt.Expected, structNode.Node)
 		})
 	}
 }
