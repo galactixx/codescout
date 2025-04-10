@@ -31,8 +31,8 @@ type aSTNodeSliceMatch[T, C nodeMatchTypes] struct {
 }
 
 // nonExactMatch returns true if the validator passes and an exact match is not required.
-func (m aSTNodeSliceMatch[T, C]) nonExactMatch() bool {
-	return m.Validator(m.ConfigTypes, m.ASTNodeTypes) && !m.Exact
+func (m aSTNodeSliceMatch[T, C]) nonExactMatch(isValidTypes bool) bool {
+	return isValidTypes && !m.Exact
 }
 
 // noTypesMatch returns true if type matching is disabled and AST node types are empty,
@@ -43,14 +43,18 @@ func (m aSTNodeSliceMatch[T, C]) noTypesMatch() bool {
 }
 
 // exactMatch returns true if the validator passes and config types match AST types exactly in count.
-func (m aSTNodeSliceMatch[T, C]) exactMatch() bool {
-	return m.Validator(m.ConfigTypes, m.ASTNodeTypes) && m.Exact &&
-		len(m.ConfigTypes) == len(m.ASTNodeTypes)
+func (m aSTNodeSliceMatch[T, C]) exactMatch(isValidTypes bool) bool {
+	return isValidTypes && m.Exact && len(m.ConfigTypes) == len(m.ASTNodeTypes)
+}
+
+func (m aSTNodeSliceMatch[T, C]) runValidator() bool {
+	isValidTypes := m.Validator(m.ConfigTypes, m.ASTNodeTypes)
+	return m.NoTypes == nil && (m.nonExactMatch(isValidTypes) || m.exactMatch(isValidTypes))
 }
 
 // validate returns true if any of the match conditions (noTypes, non-exact, exact) pass.
 func (m aSTNodeSliceMatch[T, C]) validate() bool {
-	return m.noTypesMatch() || m.nonExactMatch() || m.exactMatch()
+	return m.noTypesMatch() || m.runValidator()
 }
 
 // returnMatch validates that all return types exist in the default type map for the given nodeTypes.

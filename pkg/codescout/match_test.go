@@ -19,8 +19,7 @@ func TestAstMatchesReturnMatchExact(t *testing.T) {
 	nodeTypes := []string{"string", "int", "bool"}
 	astMatchSlice := astMatch(configTypes, nodeTypes, true, nil, returnMatch)
 
-	assert.False(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.False(t, astMatchSlice.runValidator())
 	assert.False(t, astMatchSlice.noTypesMatch())
 	assert.False(t, astMatchSlice.validate())
 }
@@ -30,8 +29,7 @@ func TestAstMatchesReturnMatchNonExact(t *testing.T) {
 	nodeTypes := []string{"string", "int", "bool"}
 	astMatchSlice := astMatch(configTypes, nodeTypes, false, nil, returnMatch)
 
-	assert.True(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.True(t, astMatchSlice.runValidator())
 	assert.False(t, astMatchSlice.noTypesMatch())
 	assert.True(t, astMatchSlice.validate())
 }
@@ -41,8 +39,7 @@ func TestAstMatchesAccessedMatchNonExact(t *testing.T) {
 	nodeTypes := []string{"Name", "Types"}
 	astMatchSlice := astMatch(configTypes, nodeTypes, false, nil, accessedMatch)
 
-	assert.False(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.False(t, astMatchSlice.runValidator())
 	assert.False(t, astMatchSlice.noTypesMatch())
 	assert.False(t, astMatchSlice.validate())
 }
@@ -51,8 +48,7 @@ func TestAstMatchesAccessedMatchNoAccess(t *testing.T) {
 	noBoolVar := true
 	astMatchSlice := astMatch([]string{}, []string{}, false, &noBoolVar, accessedMatch)
 
-	assert.True(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.False(t, astMatchSlice.runValidator())
 	assert.True(t, astMatchSlice.noTypesMatch())
 	assert.True(t, astMatchSlice.validate())
 }
@@ -62,8 +58,7 @@ func TestAstMatchesNamedTypesExact(t *testing.T) {
 	nodeTypes := []NamedType{{Name: "Name", Type: "string"}, {Name: "Age", Type: "int"}}
 	astMatchSlice := astMatch(configTypes, nodeTypes, true, nil, namedTypesMatch)
 
-	assert.False(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.False(t, astMatchSlice.runValidator())
 	assert.False(t, astMatchSlice.noTypesMatch())
 	assert.False(t, astMatchSlice.validate())
 }
@@ -72,8 +67,7 @@ func TestAstMatchNamedTypesNoTypes(t *testing.T) {
 	noBoolVar := true
 	astMatchSlice := astMatch([]NamedType{}, []NamedType{}, false, &noBoolVar, namedTypesMatch)
 
-	assert.True(t, astMatchSlice.nonExactMatch())
-	assert.False(t, astMatchSlice.exactMatch())
+	assert.False(t, astMatchSlice.runValidator())
 	assert.True(t, astMatchSlice.noTypesMatch())
 	assert.True(t, astMatchSlice.validate())
 }
