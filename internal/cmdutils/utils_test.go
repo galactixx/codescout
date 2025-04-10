@@ -3,8 +3,8 @@ package cmdutils
 import (
 	"testing"
 
+	"github.com/galactixx/codescout"
 	"github.com/galactixx/codescout/internal/flags"
-	"github.com/galactixx/codescout/pkg/codescout"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )

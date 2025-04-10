@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/galactixx/codescout"
 	"github.com/galactixx/codescout/internal/flags"
-	"github.com/galactixx/codescout/pkg/codescout"
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/spf13/cobra"

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/galactixx/codescout/pkg/codescout"
+	"github.com/galactixx/codescout"
 )
 
 func findLengthOfOutput(output string) int {

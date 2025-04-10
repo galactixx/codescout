@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/galactixx/codescout"
 	"github.com/galactixx/codescout/internal/cmdutils"
 	"github.com/galactixx/codescout/internal/flags"
-	codescout "github.com/galactixx/codescout/pkg/codescout"
 	"github.com/spf13/cobra"
 )
 
