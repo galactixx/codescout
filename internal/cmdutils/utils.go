@@ -146,31 +146,47 @@ type ScoutContainer[T any, C any] struct {
 	OutputType     string
 }
 
+func (c ScoutContainer[T, C]) getNodesBoxWidth(nodes []*T) int {
+	maxOutputLength := 0
+	for _, node := range nodes {
+		output := c.getOutput(node)
+		maxOutputLength = getMax(maxOutputLength, findLengthOfOutput(output))
+	}
+	return c.getBoxWidth(maxOutputLength)
+}
+
+func (c ScoutContainer[T, C]) getNodeBoxWidth(node *T) int {
+	output := c.getOutput(node)
+	return c.getBoxWidth(findLengthOfOutput(output))
+}
+
+func (c ScoutContainer[T, C]) getOutput(node *T) string {
+	return c.Options.getOutputCallable(c.OutputType)(node)
+}
+
+func (c ScoutContainer[T, C]) getBoxWidth(maxLenght int) int {
+	return getMax(c.BoxWidth, maxLenght+4)
+}
+
 func (c ScoutContainer[T, C]) Display(verbose bool) error {
 	if verbose {
-		occurrences, err := c.ScoutAll(c.Path, c.Config)
+		nodes, err := c.ScoutAll(c.Path, c.Config)
 		if err != nil {
 			return err
 		}
-		for idx, occurrence := range occurrences {
-			name := getNameFromNodes(occurrence)
-			c.printOutput(
-				name,
-				idx == 0,
-				c.Options.getOutputCallable(c.OutputType)(occurrence),
-			)
+		boxWidth := c.getNodesBoxWidth(nodes)
+		for idx, node := range nodes {
+			name := getNameFromNodes(node)
+			c.printOutput(name, idx == 0, c.getOutput(node), boxWidth)
 		}
 	} else {
-		occurrence, err := c.ScoutFirst(c.Path, c.Config)
+		node, err := c.ScoutFirst(c.Path, c.Config)
 		if err != nil {
 			return err
 		}
-		name := getNameFromNodes(occurrence)
-		c.printOutput(
-			name,
-			true,
-			c.Options.getOutputCallable(c.OutputType)(occurrence),
-		)
+		boxWidth := c.getNodeBoxWidth(node)
+		name := getNameFromNodes(node)
+		c.printOutput(name, true, c.getOutput(node), boxWidth)
 	}
 	return nil
 }
@@ -181,7 +197,7 @@ func (c ScoutContainer[T, C]) displaySeparator(separator string) {
 
 func (c ScoutContainer[T, C]) constructHeader(name string, boxWidth int) string {
 	fieldNameColor := color.New(color.FgCyan, color.Bold, color.Underline)
-	fieldValueColor := color.New(color.FgCyan)
+	fieldValueColor := color.New(color.FgWhite)
 
 	header := fmt.Sprintf(
 		"%s: %s   |   %s: %s   |   %s: %s",
@@ -199,13 +215,12 @@ func (c ScoutContainer[T, C]) constructHeader(name string, boxWidth int) string 
 	return paddedHeader
 }
 
-func (c ScoutContainer[T, C]) printOutput(name string, showSeparator bool, output string) {
-	boxWidth := getMax(c.BoxWidth, findLengthOfOutput(output))
+func (c ScoutContainer[T, C]) printOutput(name string, showSep bool, output string, boxWidth int) {
 	separator := strings.Repeat("═", boxWidth)
-
-	if showSeparator {
+	if showSep {
 		c.displaySeparator(separator)
 	}
+
 	boxOuterLine := strings.Repeat("─", boxWidth-2)
 	header := c.constructHeader(name, boxWidth)
 

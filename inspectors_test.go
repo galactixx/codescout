@@ -87,7 +87,7 @@ type Person struct {
 	sNode := si.newStruct(spec.Type, gen, spec)
 
 	assert.Equal(t, "Person", sNode.Name())
-	assert.Equal(t, "// Person doc", sNode.Comments())
+	assert.Equal(t, "// Person doc\n", sNode.Comments())
 	assert.Equal(t, "{\n    Name string\n    Age  int\n}", sNode.Body())
 }
 

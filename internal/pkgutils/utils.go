@@ -89,7 +89,7 @@ func CommentGroupToString(comment *ast.CommentGroup) string {
 	}
 	var buf bytes.Buffer
 	for _, comment := range comment.List {
-		buf.WriteString(comment.Text)
+		buf.WriteString(comment.Text + "\n")
 	}
 	return buf.String()
 }
