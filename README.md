@@ -4,10 +4,6 @@
 
 ---
 
-## 📁 Package Overview
-
-The core library is available under `pkg/codescout`. It provides types and functions for inspecting Go source code.
-
 ### ✍️ Exported Functions
 
 #### `ScoutFunction(path string, config FuncConfig) (*FuncNode, error)`
